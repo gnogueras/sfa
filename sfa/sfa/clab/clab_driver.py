@@ -17,11 +17,11 @@ from sfa.util.sfalogging import logger
 from sfa.util.sfatime import utcparse, datetime_to_string, datetime_to_epoch
 from sfa.util.xrn import Xrn, hrn_to_urn, get_leaf, urn_to_hrn
 
-from clab.clab_aggregate import ClabAggregate
-from clab.clab_registry import ClabRegistry
-from clab.clab_shell import ClabShell
-import clab.clab_xrn
-from clab.clab_xrn import slicename_to_hrn, hostname_to_hrn
+from sfa.clab.clab_aggregate import ClabAggregate
+from sfa.clab.clab_registry import ClabRegistry
+from sfa.clab.clab_shell import ClabShell
+import sfa.clab.clab_xrn
+from sfa.clab.clab_xrn import slicename_to_hrn, hostname_to_hrn
 
 #
 # ClabShell is just an xmlrpc serverproxy where methods

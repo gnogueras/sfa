@@ -10,7 +10,7 @@ import requests
 from orm.api import Api
 from orm.resources import Resource
 
-from clab_exceptions import MalformedURI, UnexistingURI, InvalidURI, ResourceNotFound, OperationFailed
+from sfa.clab.clab_exceptions import MalformedURI, UnexistingURI, InvalidURI, ResourceNotFound, OperationFailed
 
 class ClabShell:
     '''
@@ -21,8 +21,8 @@ class ClabShell:
     
     def __init__ ( self, config ) :
         global controller
-        #base_uri = 'http://172.24.42.141/api
-        base_uri=config.base_uri
+        base_uri = 'http://172.24.42.141/api'
+        #base_uri=config.base_uri
         controller = Api(base_uri) #(config.CLAP_API_URL)
         try:
             controller.retrieve()
@@ -37,8 +37,9 @@ class ClabShell:
         self.username='vct' #config.username
         self.password='vct' #config.password
         self.groupname='vct' #config.group
-        controller.login(config.username, config.password)
-        self.groupname=config.groupname
+        #controller.login(config.username, config.password)
+        controller.login(self.username, self.password)
+        #self.groupname=config.groupname
     
     
     ###############

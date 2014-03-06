@@ -37,6 +37,7 @@ flavour_xml_section_hash = { \
     'fd':'sfa_federica',
     'nitos':'sfa_nitos',
     'dummy':'sfa_dummy',
+    'clab':'sfa_clab',
     }
 configuration={ \
     'name':'sfa',

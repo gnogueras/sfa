@@ -21,10 +21,10 @@ import datetime
 
 # local imports from the Project
 #from rspecs.elements.versions.clabNode import ClabNode
-from clab.clab_xrn import type_of_urn, urn_to_slicename, slicename_to_urn,\
+from sfa.clab.clab_xrn import type_of_urn, urn_to_slicename, slicename_to_urn,\
     hostname_to_urn, urn_to_nodename, urn_to_slivername, slivername_to_urn
-from clab.clab_xrn import urn_to_uri, get_node_by_urn, get_slice_by_urn, get_sliver_by_urn, get_slice_by_sliver_urn
-from clab.clab_slices import ClabSlices
+from sfa.clab.clab_xrn import urn_to_uri, get_node_by_urn, get_slice_by_urn, get_sliver_by_urn, get_slice_by_sliver_urn
+from sfa.clab.clab_slices import ClabSlices
 
 
 class ClabAggregate:

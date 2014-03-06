@@ -12,7 +12,7 @@ from sfa.util.sfatime import utcparse, datetime_to_epoch
 from sfa.util.xrn import Xrn, get_leaf, get_authority, urn_to_hrn
 
 
-from clab.clab_xrn import urn_to_uri, urn_to_slicename, get_slice_by_urn
+from sfa.clab.clab_xrn import urn_to_uri, urn_to_slicename, get_slice_by_urn
 
 class ClabSlices:
     '''
