@@ -61,17 +61,17 @@ class ClabAggregate:
         version_manager = VersionManager()
         
         # int geni_api 
-        geni_api = int(version_manager.get_version().version)
+        geni_api = int(version_manager.get_version('GENI 3').version)
         
         # struct code
         code = dict(geni_code=0)
         
         # struct value
         value = dict()
-        value['geni_api'] = int(version_manager.get_version().version)
-        value['geni_api_versions'] = dict([(version_manager.get_version().version, "This server's AM API absolute URL")])
-        value['geni_request_rspec_versions'] = [version.to_dict() for version in version_manager.versions if version.content_type in ['*', 'request']]
-        value['geni_ad_rspec_versions'] = [version.to_dict() for version in version_manager.versions if version.content_type in ['*', 'ad']]
+        value['geni_api'] = int(version_manager.get_version('GENI 3').version)
+        value['geni_api_versions'] = dict([(version_manager.get_version('GENI 3').version, "This server's AM API absolute URL")])
+        value['geni_request_rspec_versions'] = [version.to_dict() for version in version_manager.versions if (version.content_type in ['*', 'request'] and version.type=='GENI')]
+        value['geni_ad_rspec_versions'] = [version.to_dict() for version in version_manager.versions if (version.content_type in ['*', 'ad'] and version.type=='GENI')]
         value['geni_credential_types'] = [{'geni_type': 'geni_sfa', 'geni_version' : '3'}] ##???????????????????????????? CHECK
         
         # output
@@ -106,9 +106,10 @@ class ClabAggregate:
         """
 
         version_manager = VersionManager()
-        version = version_manager.get_version()        
+        version = version_manager.get_version('GENI 3')        
         rspec_version = version_manager._get_version(version.type, version.version, 'ad')
-        rspec = RSpec(version=rspec_version, user_options=options)     
+        rspec = RSpec(version=rspec_version, user_options=options)
+             
         
         # List resources: available nodes and/or slices??
         # belonging to the aggregate
@@ -177,7 +178,7 @@ class ClabAggregate:
         """
         
         version_manager = VersionManager()
-        version = version_manager.get_version()        
+        version = version_manager.get_version('GENI 3')        
         rspec_version = version_manager._get_version(version.type, version.version, 'manifest')
         rspec = RSpec(version=rspec_version, user_options=options)  
         
@@ -437,7 +438,7 @@ class ClabAggregate:
         
         # Prepare and return the struct (use describe function)   
         version_manager = VersionManager()
-        rspec_version = version_manager.get_version()
+        rspec_version = version_manager.get_version('GENI 3')
         return self.describe(urns, credentials, options)
     
     
@@ -582,7 +583,7 @@ class ClabAggregate:
                 
         # Prepare and return the struct (use describe function)   
         #version_manager = VersionManager()
-        #rspec_version = version_manager.get_version(options['geni_rspec_version'])
+        #rspec_version = version_manager.get_version('GENI 3'options['geni_rspec_version'])
         #return self.describe(urns, rspec_version, options=options)
     
         

@@ -452,7 +452,8 @@ class ClabShell:
         # Get Current state may fail if the node is not ready
         try:
             current_state = controller.retrieve(mgmt_net_addr).state
-        except controller.ResponseStatusError:
+        #except controller.ResponseStatusError:
+        except Exception:
             current_state = 'unknown'
         return current_state
             
@@ -484,7 +485,8 @@ class ClabShell:
         # Get current state may fail if the sliver is not ready
         try:
             current_state = controller.retrieve(mgmt_net_addr).state
-        except controller.ResponseStatusError:
+        #except controller.ResponseStatusError:
+        except Exception:
             current_state = 'unknown'
         return current_state
     
