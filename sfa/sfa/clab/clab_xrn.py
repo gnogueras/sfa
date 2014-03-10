@@ -266,6 +266,35 @@ def hrn_to_authname (hrn):
     """
     return Xrn(xrn=hrn).get_authority_hrn()
 
+def username_to_hrn (auth, username):
+    """
+    Turns user name into hrn.
+    
+    :param auth: Site authority
+    :type string
+    
+    :param username: Node username   
+    :type string
+
+    :returns: Node's hrn
+    :rtype: string
+    """
+    return ClabXrn(auth=auth, username=username).get_hrn()
+
+def username_to_urn(auth, username):
+    """
+    Turns user name into urn.
+    
+    :param auth: Site authority.
+    :type string
+    
+    :param username: Node username.
+    :type string.
+
+    :returns: Node's urn.
+    :rtype: string
+    """
+    return ClabXrn(auth=auth, username=username).get_urn()
 
 ###########################################
 # Special translation methods using driver
@@ -385,7 +414,7 @@ class ClabXrn (Xrn):
     def site_hrn (auth):
         return auth
 
-    def __init__ (self, auth=None, hostname=None, slicename=None, slivername=None, **kwargs):
+    def __init__ (self, auth=None, hostname=None, slicename=None, slivername=None, username=None, **kwargs):
         
         if hostname is not None:
             self.type = 'node'
@@ -402,6 +431,11 @@ class ClabXrn (Xrn):
             # Reformat sliver name
             xrn_slivername = clab_slivername_to_xrn_slivername(slivername)
             self.hrn = '.'.join([auth, xrn_slivername])
+            self.hrn_to_urn()
+            
+        elif username is not None:
+            self.type = 'user'
+            self.hrn = '.'.join([auth, username])
             self.hrn_to_urn()
 
         else:

@@ -198,11 +198,14 @@ class ClabShell:
         :rtype list 
         '''
         # Get list of dicts (users)
-        all_users=controller.users.retrieve().serialize()
+        all_users = controller.slices.retrieve().serialize()
         users=[]
+        users.extend(all_users)
         for user in all_users:
             for key in filters:
-                if key in user and user[key]==filters[key]: users.append(user)
+                if key not in user or user[key]!=filters[key]: 
+                    users.remove(user)
+                    break
         return users
     
     
@@ -711,6 +714,30 @@ class ClabShell:
             raise OperationFailed('create sliver', e.message)
         # Return sliver dict
         return created_sliver.serialize()
+    
+    
+    def create_user(self, username, email=None, description=None, groupname=None, auth_tokens=None):
+        '''
+        Function to create a user. The parameters are the required arguments for user creation.
+        Some of them have default values. 
+        NOTE: you need administrator permissions to create users in the testbed.
+        
+        :param slice_uri: URI of the slice the sliver will belong to (required)
+        :type string
+        
+        :param node_uri: URI of the node that will contain the slice (required) 
+        :type string
+        
+        :param interfaces_definition: dictionary defining the interfaces for the created sliver (has default value)
+        :type string
+        
+        :param properties: extra properties of the sliver
+        :type dict
+        
+        :returns dictionary of the created sliver
+        :rtype dict  
+        '''     
+        controller.users.post(data='{ "auth_tokens": "",  "description": "%s",  "name": "%s"}'%(description, username))
     
     
     
