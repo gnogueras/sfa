@@ -19,7 +19,6 @@ from sfa.util.xrn import Xrn, hrn_to_urn, get_leaf, urn_to_hrn
 
 from sfa.clab.clab_aggregate import ClabAggregate
 from sfa.clab.clab_shell import ClabShell
-import sfa.clab.clab_xrn
 from sfa.clab.clab_xrn import slicename_to_hrn, hostname_to_hrn
 
 
@@ -66,20 +65,23 @@ class ClabRegistry:
         :returns C-Lab identifier (id) of the created entity
         :rtype int
         '''
+        print "Register method in ClabRegistry"
+        # Get name of the entity being registered
+        entity_name = sfa_record.get('name', get_leaf(hrn))
         if sfa_record['type'] == 'node':
             try:
-                node_id = self.driver.testbed_shell.get_node_by(node_name=sfa_record['name']).get('id', None)
+                node_id = self.driver.testbed_shell.get_node_by(node_name=entity_name).get('id', None)
             except Exception: 
                 # Create the node if does not exist
-                node_id = self.driver.testbed_shell.create_node(sfa_record).get('id', None)
+                node_id = self.driver.testbed_shell.create_node(entity_name, sfa_record).get('id', None)
             return node_id
 
         elif sfa_record['type'] == 'slice':
             try:
-                slice_id = self.driver.testbed_shell.get_slice_by(slice_name=sfa_record['name']).get('id', None)
+                slice_id = self.driver.testbed_shell.get_slice_by(slice_name=entity_name).get('id', None)
             except Exception:
                 # Create the slice if does not exist
-                slice_id = self.driver.testbed_shell.create_slice(sfa_record['name']).get('id', None)
+                slice_id = self.driver.testbed_shell.create_slice(entity_name, fields=sfa_record).get('id', None)
             return slice_id
             
         elif sfa_record['type'] == 'user':

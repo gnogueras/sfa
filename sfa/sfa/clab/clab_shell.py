@@ -21,17 +21,17 @@ class ClabShell:
     
     def __init__ ( self, config ) :
         global controller
-        base_uri = 'http://172.24.42.141/api'
+        self.base_uri = 'http://172.24.42.141/api'
         #base_uri=config.base_uri
-        controller = Api(base_uri) #(config.CLAP_API_URL)
+        controller = Api(self.base_uri) #(config.CLAP_API_URL)
         try:
             controller.retrieve()
         except requests.exceptions.MissingSchema as e:
-            raise MalformedURI(base_uri, e.message)
+            raise MalformedURI(self.base_uri, e.message)
         except requests.exceptions.ConnectionError as e:
-            raise UnexistingURI(base_uri, e.message)
+            raise UnexistingURI(self.base_uri, e.message)
         except ValueError:
-            raise InvalidURI(base_uri)
+            raise InvalidURI(self.base_uri)
             
         # Use of a default user for the C-Lab SFAWrap
         self.username='vct' #config.username
@@ -46,6 +46,14 @@ class ClabShell:
     # GET METHODS #
     ###############
     
+    def get_testbed_info(self):
+        '''
+        Special funciton to get information from the testbed.
+        :returns Dictionary containing information of the testbed
+        :rtype dict
+        '''
+        return {'name': 'clab', 'domain':self.base_uri, 'user':self.username, 'group':self.groupname}
+        
     def get_by_uri(self, uri):
         '''
         Function to get any kind of entity by its uri
@@ -566,7 +574,7 @@ class ClabShell:
     # CREATE METHODS #
     ##################
     
-    def create_node(self, fields):
+    def create_node(self, name, fields):
         '''
         Function to create a node. The fields argument is a dictionary containing at least
         all the required fields for a node to be created.
@@ -582,9 +590,8 @@ class ClabShell:
         IMPORTANT NOTE: creation of Nodes is only supported for VCT (Virtual Confine Testbed), but not in the real testbed
                         The create node operation takes 30 sec approx.
         '''
-        # Required fields with no default value
-        name = fields['name']
-        
+
+        # Get group or use default one
         group_uri = fields.get('group_uri', None)
         if group_uri:
             group = self.get_by_uri(group_uri)
@@ -631,7 +638,7 @@ class ClabShell:
         return created_node.serialize()
     
     
-    def create_slice(self, name, group_uri=None, template_uri=None, properties={}):
+    def create_slice(self, name, group_uri=None, template_uri=None, fields={}, properties={}):
         '''
         Function to create a slice. The parameters are the required arguments for slice creation.
         Some of them have default values. 
