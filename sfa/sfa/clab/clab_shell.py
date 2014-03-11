@@ -198,7 +198,7 @@ class ClabShell:
         :rtype list 
         '''
         # Get list of dicts (users)
-        all_users = controller.slices.retrieve().serialize()
+        all_users = controller.users.retrieve().serialize()
         users=[]
         users.extend(all_users)
         for user in all_users:
@@ -437,7 +437,36 @@ class ClabShell:
         for sliver in slivers:
             nodes.append(controller.retrieve(sliver['node']['uri']).serialize())
         return nodes
-            
+    
+    
+    def get_users_by_slice(self, slice=None, slice_uri=None):
+        '''
+        Function to get the users associated to a given slice.
+        The users associated to the slice are those users belonging to the group that owns the sice.
+        One of the parameters must be present.
+        
+        :param slice_uri: (optional) get users associated with the slice indicated by this uri
+        :type string
+        
+        :param slice: (optional) get users associated with the slice indicated by slice dict
+        :type dict
+        
+        :returns List of user dictionaries associated with the specified slice
+        :rtype list
+        '''
+        # Obtain slice dict if argument is slice_uri
+        if slice_uri: 
+            # Raises exceptions if invalid uri or not found resource
+            slice = self.get_slice_by(slice_uri=slice_uri)
+        # Obtain group of the slice
+        group_uri = slice['group']['uri']
+        group = self.get_by_uri(group_uri)
+        # Obtain user uris of the user in this group
+        user_uris = [user_role['user']['uri'] for user_role in group['user_roles']]
+        # Obtain user dicts in this group
+        users_of_slice = [self.get_by_uri(user_uri) for user_uri in user_uris]
+        return users_of_slice   
+        
     
     def get_node_current_state(self, node=None, node_uri=None):
         '''
@@ -722,23 +751,39 @@ class ClabShell:
         Some of them have default values. 
         NOTE: you need administrator permissions to create users in the testbed.
         
-        :param slice_uri: URI of the slice the sliver will belong to (required)
+        :param username: URI of the slice the sliver will belong to (required)
         :type string
         
-        :param node_uri: URI of the node that will contain the slice (required) 
+        :param email: URI of the node that will contain the slice (required) 
         :type string
         
-        :param interfaces_definition: dictionary defining the interfaces for the created sliver (has default value)
+        :param description: dictionary defining the interfaces for the created sliver (has default value)
         :type string
         
-        :param properties: extra properties of the sliver
+        :param groupname: extra properties of the sliver
+        :type dict
+        
+        :param auth_tokens: extra properties of the sliver
         :type dict
         
         :returns dictionary of the created sliver
         :rtype dict  
-        '''     
-        controller.users.post(data='{ "auth_tokens": "",  "description": "%s",  "name": "%s"}'%(description, username))
-    
+        '''
+        # Create/post the new user     
+        controller.users.post(data='{ "auth_tokens": "%s",  "description": "%s",  "name": "%s"}'%(auth_tokens, description, username))
+        # Get user ORM object 
+        user_uri = self.get_users({'name':username})[0]['uri']
+        user = self.get_by_uri_no_serialized(user_uri)
+        # Get group uri
+        if not groupname:
+            groupname = self.groupname    
+        group_uri = self.get_group_by(group_name=groupname)['uri']
+        # Build group roles
+        group_roles=[{'is_admin': 'false', 'is_technician': 'false', 'group': {'uri': group_uri}, 'is_researcher': 'true'}]
+        # Update user with the group_roles
+        user.update(group_roles=group_roles)
+        # Return user dict
+        return user.serialize()
     
     
     
@@ -981,6 +1026,8 @@ class ClabShell:
         :rtype boolean
         '''
         user = self.get_by_uri_no_serialized(user_uri)
+        print "shell.update_user called with user_uri=%s and fields="%(user_uri)
+        print fields
         try:
             for key in fields:
                 if key=='name':    

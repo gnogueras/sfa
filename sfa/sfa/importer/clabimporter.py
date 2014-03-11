@@ -103,11 +103,11 @@ class ClabImporter:
         
         print '1: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
         # Delete all default records
-        for record in all_records:
-            global_dbsession.delete(record)
-            global_dbsession.commit()
-        print '2: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
-        all_records = global_dbsession.query(RegRecord).all()
+        #for record in all_records:
+        #    global_dbsession.delete(record)
+        #    global_dbsession.commit()
+        #print '2: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
+        #all_records = global_dbsession.query(RegRecord).all()
         
         # Dicts to avoid duplicates in SFA database
         # create dict keyed by (type,hrn) 
@@ -257,6 +257,9 @@ class ClabImporter:
                 # Reduce hrn up to 64 characters
                 if len(user_hrn) > 64: user_hrn = user_hrn[:64]
                 user_urn = hrn_to_urn(user_hrn, 'user')
+                
+                print user_hrn
+                print user_urn
 
                 # Try to locate the user_hrn in the SFA records
                 user_record = self.locate_by_type_hrn ('user', user_hrn)
@@ -268,38 +271,43 @@ class ClabImporter:
                 def init_user_key (user):
                     pubkey = None
                     pkey = None
-                    if  user['keys']:
+                    if  user['auth_tokens']:
                         # randomly pick first key in set
-                        for key in user['keys']:
+                        for key in user['auth_tokens']:
                             pubkey = key
                             try:
                                 pkey = convert_public_key(pubkey)
+                                print "key converted for user %s"%(user['name'])
+                                print pkey
                                 break
                             except:
                                 continue
                         if not pkey:
                             self.logger.warn('CLabImporter: unable to convert public key for %s' % user_hrn)
+                            print "rsa key not found among the keys for user %s. Create a new keypair"%(user['name'])
                             pkey = Keypair(create=True)
                     else:
                         # the user has no keys. Creating a random keypair for the user's gid
                         self.logger.warn("CLabImporter: user %s does not have a CLab public key"%user_hrn)
+                        print "auth_tokens empty for user %s"%(user['name'])
                         pkey = Keypair(create=True)
                     return (pubkey, pkey)
                 ###########################
                 
                 try:
                     if not user_record:
+                        print "Create new user record for user %s"%(user['name'])
                         # Create/Import record for the user
                         # Create a keypair for the node
                         (pubkey,pkey) = init_user_key (user)
                         # Obtain parameters
                         user_gid = self.auth_hierarchy.create_gid(user_urn, create_uuid(), pkey)
-                        user_gid.set_email(user['name'])
+                        user_gid.set_email("%s@clabwrap.eu"%(user['name']))
                         # Create record for the node and add it to the Registry
                         user_record = RegUser (hrn=user_hrn, gid=user_gid, 
                                                  pointer=user['id'], 
                                                  authority=get_authority(user_hrn),
-                                                 email=user['name'])
+                                                 email="%s@clabwrap.eu"%(user['name']))
                         if pubkey: 
                             user_record.reg_keys=[RegKey (pubkey)]
                         else:
@@ -321,7 +329,7 @@ class ClabImporter:
                             return False
                         # is there a new key in Dummy TB ?
                         new_keys=False
-                        for key in user['keys']:
+                        for key in user['auth_tokens']:
                             if not key_in_list (key,sfa_keys):
                                 new_keys = True
                         if new_keys:
@@ -332,14 +340,21 @@ class ClabImporter:
                             else:
                                 user_record.reg_keys=[ RegKey (pubkey)]
                             self.logger.info("CLabImporter: updated person: %s" % user_record)
-                    user_record.email = user['name']
+                    user_record.email = "%s@clabwrap.eu"%(user['name'])
                     global_dbsession.commit()
+                    
+                    print '3: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
                     
                     # Fresh record in SFA Registry
                     user_record.stale=False
                 except:
                     self.logger.log_exc("CLabImporter: failed to import user %d %s"%(user['id'],user['name']))
-                    
+            
+            # DEBUG
+                print '*********** ALL RECORDS ***********'
+                all_records = global_dbsession.query(RegRecord).all()
+                for record in all_records: 
+                    print record         
                     
             # SLICES
             for slice in slices:
@@ -347,6 +362,8 @@ class ClabImporter:
                 slice_hrn = slicename_to_hrn(site_hrn, slice['name'])
                 # Try to locate the slice_hrn in the SFA records
                 slice_record = self.locate_by_type_hrn ('slice', slice_hrn)
+                print slice_hrn
+                print slice_record
                 
                 if not slice_record:
                     # Create/Import record for the slice
@@ -361,24 +378,37 @@ class ClabImporter:
                                                  pointer=slice['id'],
                                                  authority=get_authority(slice_hrn))
                         slice_record.just_created()
+                        print "Create new slice record for slice %s"%(slice['name'])
                         global_dbsession.add(slice_record)
                         global_dbsession.commit()
-                        self.logger.info("DummyImporter: imported slice: %s" % slice_record)  
+                        self.logger.info("CLabImporter: imported slice: %s" % slice_record)  
                         self.remember_record ( slice_record )
                     except:
-                        self.logger.log_exc("DummyImporter: failed to import slice")
+                        self.logger.log_exc("CLabImporter: failed to import slice")
                 else:
                     # Slice record already in the SFA registry. Update?
                     self.logger.warning ("Slice update not yet implemented")
                     pass
                 
-                # record current users affiliated with the slice
+                # Get current users associated with the slice
+                users_of_slice = shell.get_users_by_slice(slice)
+                # record current users associated with the slice
                 slice_record.reg_researchers = \
-                    [ self.locate_by_type_pointer ('user',user_id) for user_id in slice['user_ids'] ]
+                    [ self.locate_by_type_pointer ('user',user['id']) for user in users_of_slice]
                 global_dbsession.commit()
+                
+                print slice_record
+                print '5: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
                 
                 # Fresh record in SFA Registry 
                 slice_record.stale=False    
+                
+                
+         # DEBUG
+        print '*********** ALL RECORDS ***********'
+        all_records = global_dbsession.query(RegRecord).all()
+        for record in all_records: 
+            print record       
                 
                 
         # Remove stale records. Old/non-fresh records that were in the SFA Registry

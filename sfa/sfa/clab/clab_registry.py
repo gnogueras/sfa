@@ -81,14 +81,20 @@ class ClabRegistry:
                 slice_id = self.driver.testbed_shell.get_slice_by(slice_name=entity_name).get('id', None)
             except Exception:
                 # Create the slice if does not exist
+                print "Calling shell.create_slice with name %s"%(entity_name)
+                print sfa_record
                 slice_id = self.driver.testbed_shell.create_slice(entity_name, fields=sfa_record).get('id', None)
             return slice_id
             
         elif sfa_record['type'] == 'user':
-            # NOT ALLOWED
-            raise SfaNotImplemented('register user')
-        else:
-            raise SfaNotImplemented
+            try:
+                user_id = self.driver.testbed_shell.get_users({'name':entity_name})[0].get('id', None)
+            except Exception:
+                # Create the user if does not exist
+                print "Calling shell.create_user with name %s"%(entity_name)
+                print sfa_record
+                user_id = self.driver.testbed_shell.create_user(entity_name).get('id', None)
+            return user_id
     
         
     def remove (self, sfa_record):

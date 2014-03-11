@@ -112,11 +112,16 @@ class DummyImporter:
 
         # initialize record.stale to True by default, then mark stale=False on the ones that are in use
         for record in all_records: record.stale=True
+        
+        # DEBUG
+        #all_records = global_dbsession.query(RegRecord).all()
+        #for record in all_records: print record
 
         ######## retrieve Dummy TB data
         # Get all plc sites
         # retrieve only required stuf
         sites = [shell.GetTestbedInfo()]
+        print "sites: " + sites
         # create a hash of sites by login_base
 #        sites_by_login_base = dict ( [ ( site['login_base'], site ) for site in sites ] )
         # Get all dummy TB users
@@ -143,22 +148,30 @@ class DummyImporter:
         slices_by_id = dict ( [ (slice['slice_id'], slice ) for slice in slices ] )
 
 
-        # start importing 
+        # start importing
+        print " STARTING FOR SITES" 
         for site in sites:
             site_hrn = _get_site_hrn(interface_hrn, site)
             # import if hrn is not in list of existing hrns or if the hrn exists
             # but its not a site record
             site_record=self.locate_by_type_hrn ('authority', site_hrn)
+            print site_hrn
+            print site_record
             if not site_record:
                 try:
+                    print "TRY TO CREATE SITE RECORD"
                     urn = hrn_to_urn(site_hrn, 'authority')
                     if not self.auth_hierarchy.auth_exists(urn):
+                        print "create auth "+urn
                         self.auth_hierarchy.create_auth(urn)
                     auth_info = self.auth_hierarchy.get_auth_info(urn)
                     site_record = RegAuthority(hrn=site_hrn, gid=auth_info.get_gid_object(),
                                                pointer= -1,
                                                authority=get_authority(site_hrn))
                     site_record.just_created()
+                    print "urn: "+urn
+                    print "auth_info: " + auth_info
+                    print site_record
                     global_dbsession.add(site_record)
                     global_dbsession.commit()
                     self.logger.info("DummyImporter: imported authority (site) : %s" % site_record) 
@@ -200,7 +213,10 @@ class DummyImporter:
                     # xxx update the record ...
                     pass
                 node_record.stale=False
-
+            
+            all_records = global_dbsession.query(RegRecord).all()
+            for record in all_records: print record
+            
             site_pis=[]
             # import users
             for user in users:
