@@ -50,6 +50,11 @@ class DummyDriver (Driver):
         self.root_auth = config.SFA_REGISTRY_ROOT_AUTH
         self.shell = DummyShell (config)
         self.testbedInfo = self.shell.GetTestbedInfo()
+        
+        # Debug prints
+        print "SFA_INTERFACE_HRN: %s"%(config.SFA_INTERFACE_HRN)
+        print "SFA_REGISTRY_ROOT_AUTH: %s"%(config.SFA_REGISTRY_ROOT_AUTH)
+        print "SFA_DUMMY_URL: %s"%(config.SFA_DUMMY_URL)
  
     def check_sliver_credentials(self, creds, urns):
         # build list of cred object hrns

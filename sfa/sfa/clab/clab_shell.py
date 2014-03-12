@@ -32,6 +32,7 @@ class ClabShell:
             raise UnexistingURI(self.base_uri, e.message)
         except ValueError:
             raise InvalidURI(self.base_uri)
+        
             
         # Use of a default user for the C-Lab SFAWrap
         self.username='vct' #config.username

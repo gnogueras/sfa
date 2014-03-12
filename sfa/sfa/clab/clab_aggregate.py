@@ -108,8 +108,7 @@ class ClabAggregate:
         version_manager = VersionManager()
         version = version_manager.get_version('GENI 3')        
         rspec_version = version_manager._get_version(version.type, version.version, 'ad')
-        rspec = RSpec(version=rspec_version, user_options=options)
-             
+        rspec = RSpec(version=rspec_version, user_options=options)        
         
         # List resources: available nodes and/or slices??
         # belonging to the aggregate
@@ -176,6 +175,7 @@ class ClabAggregate:
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#Describe
 
         """
+        print "CLAB AGGREGATE DESCRIBE METHOD"
         
         version_manager = VersionManager()
         version = version_manager.get_version('GENI 3')        

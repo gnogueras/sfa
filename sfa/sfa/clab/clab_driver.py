@@ -34,16 +34,32 @@ class ClabDriver (Driver):
     cache = None
 
     def __init__ (self, api):
-        #Driver.__init__ (self, api)
+        Driver.__init__ (self, api)
         config = api.config
         self.testbed_shell = ClabShell (config)
         self.cache=None
         
+        # Debug print
+        print "SFA_INTERFACE_HRN: %s"%(config.SFA_INTERFACE_HRN)
+        print "SFA_REGISTRY_ROOT_AUTH: %s"%(config.SFA_REGISTRY_ROOT_AUTH)
+        print "SFA_GENERIC_FLAVOUR: %s"%(config.SFA_GENERIC_FLAVOUR)
+        print "SFA_CLAB_USER: %s"%(config.SFA_CLAB_USER)
+        print "SFA_CLAB_PASSWORD: %s"%(config.SFA_CLAB_PASSWORD)
+        print "SFA_CLAB_GROUP: %s"%(config.SFA_CLAB_GROUP)
+        print "SFA_CLAB_AUTO_SLICE_CREATION: %s"%(config.SFA_CLAB_AUTO_SLICE_CREATION)
+        print "SFA_CLAB_AUTO_NODE_CREATION: %s"%(config.SFA_CLAB_AUTO_NODE_CREATION)
+        print "SFA_CLAB_URL: %s"%(config.SFA_CLAB_URL)
+        
+        
         # Get it from CONFIG
-        self.AUTHORITY = 'confine.clab'
-        self.TESTBEDNAME = 'C-Lab'
-        self.AUTOMATIC_SLICE_CREATION = True
-        self.AUTOMATIC_NODE_CREATION = False
+        self.AUTHORITY = ".".join([config.SFA_INTERFACE_HRN,config.SFA_GENERIC_FLAVOUR])
+        self.TESTBEDNAME = config.SFA_GENERIC_FLAVOUR
+        self.AUTOMATIC_SLICE_CREATION = config.SFA_CLAB_AUTO_SLICE_CREATION
+        self.AUTOMATIC_NODE_CREATION = config.SFA_CLAB_AUTO_NODE_CREATION
+        #self.AUTHORITY = 'confine.clab'
+        #self.TESTBEDNAME = 'C-Lab'
+        #self.AUTOMATIC_SLICE_CREATION = True
+        #self.AUTOMATIC_NODE_CREATION = False
                 
 # un-comment below lines to enable caching
 #        if config.SFA_AGGREGATE_CACHING:
@@ -110,7 +126,7 @@ class ClabDriver (Driver):
         version = aggregate.get_version()
         
         return {
-            'testbed': self.TESTBEDNAME,
+            'testbed': 'C-Lab',
             'geni_request_rspec_versions': version['value']['geni_request_rspec_versions'],
             'geni_ad_rspec_versions': version['value']['geni_ad_rspec_versions']
             }
@@ -128,6 +144,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Describe
         '''
+        print "CLAB_DRIVER DESCRIBE METHOD"
         aggregate = ClabAggregate(self)
         return aggregate.describe(urns, credentials, options)    
     
