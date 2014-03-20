@@ -81,7 +81,7 @@ class ClabAggregate:
     
     
     
-    def list_resources(self, credentials, options={}):
+    def list_resources(self, credentials={}, options={}):
         """
         Returns an advertisement Rspec of available resources at this
         aggregate. This Rspec contains a resource listing along with their
@@ -138,7 +138,7 @@ class ClabAggregate:
     
     
         
-    def describe(self, urns, credentials, options={}):
+    def describe(self, urns, credentials={}, options={}):
         """
         Retrieve a manifest RSpec describing the resources contained by the
         named entities, e.g. a single slice or a set of the slivers in a slice.
@@ -226,7 +226,7 @@ class ClabAggregate:
                 'geni_slivers': geni_slivers}
         
             
-    def allocate(self, slice_urn, credentials, rspec_string, options={}):
+    def allocate(self, slice_urn, rspec_string, expiration, credentials={}, options={}):
         '''
         Function to allocate/reserve the resources described in the rspec_string for a sliver 
         that will belong to the slice specified by the slice_urn argument.
@@ -239,6 +239,9 @@ class ClabAggregate:
         
         :param rspec_string: string that contains a XML RSpec describing the resources
             that will be allocated in the givne slice
+        :type string
+        
+        :param expiration: string that contains the expiration date of the allocated resources
         :type string
         
         :param options: various options.
@@ -302,7 +305,7 @@ class ClabAggregate:
         return self.describe([slice_urn], credentials, options)
 
     
-    def renew(self, urns, credentials, expiration_time, options={}):
+    def renew(self, urns, expiration_time, credentials={}, options={}):
         '''
         Request that the named slivers be renewed, with their expiration date extended.
         However, the expiration_time argument is ignore since in C-Lab, renewals are standard 
@@ -366,7 +369,7 @@ class ClabAggregate:
         return description['geni_slivers']
 
     
-    def provision(self, urns, credentials, options={}):
+    def provision(self, urns, credentials={}, options={}):
         '''
         Request for provisioning the the indicated slivers/slices, so their state become geni_provisioned 
         and they may possibly be geni_ready for experimenter use.
@@ -442,7 +445,7 @@ class ClabAggregate:
         return self.describe(urns, credentials, options)
     
     
-    def status (self, urns, credentials, options={}):
+    def status (self, urns, credentials={}, options={}):
         '''
         Function to get the status of a sliver or slivers belonging to a single slice at the given aggregate.
         
@@ -479,7 +482,7 @@ class ClabAggregate:
         return status
         
 
-    def perform_operational_action(self, urns, credentials, action, options={}):
+    def perform_operational_action(self, urns, action, credentials={}, options={}):
         '''
         Perform the named operational action on the named slivers, possibly changing
         the geni_operational_staus of the slivers. 
@@ -588,7 +591,7 @@ class ClabAggregate:
     
         
     
-    def delete(self, urns, credentials, options):
+    def delete(self, urns, credentials={}, options={}):
         '''
         Delete the named slivers, making them geni_unallocated
         The urns argument can be a list of slivers urns (belonging to the same slice)
@@ -656,7 +659,7 @@ class ClabAggregate:
         return deleted_slivers
           
     
-    def shutdown(self, slice_urn, credentials, options={}):
+    def shutdown(self, slice_urn, credentials={}, options={}):
         '''
         Perform an emeregency shutdown on the slivers in the given slive at this aggregate. 
         Resources should be taken offline such that experimenter access is cut off. 

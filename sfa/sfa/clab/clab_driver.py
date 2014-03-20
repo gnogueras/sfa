@@ -162,6 +162,12 @@ class ClabDriver (Driver):
     #####      aggregate oriented       #####
     #########################################
     
+    def testbed_name(self):
+        """
+        Method to return the name of the testbed
+        """ 
+        return "C-Lab"
+    
     def aggregate_version(self):
         """
         GENI AM API v3 GetVersion
@@ -176,77 +182,77 @@ class ClabDriver (Driver):
             }
     
     
-    def list_resources(self, credentials, options={}):
+    def list_resources(self, version, options={}):
         '''
         GENI AM API v3 ListResources
         '''
         aggregate = ClabAggregate(self)
-        return aggregate.list_resources(credentials, options)
+        return aggregate.list_resources(options=options)
     
     
-    def describe(self, urns, credentials, options={}):
+    def describe(self, urns, version, options={}):
         '''
         GENI AM API v3 Describe
         '''
         print "CLAB_DRIVER DESCRIBE METHOD"
         aggregate = ClabAggregate(self)
-        return aggregate.describe(urns, credentials, options)    
+        return aggregate.describe(urns, options=options)    
     
     
-    def allocate(self, slice_urn, credentials, rspec_string, options={}):
+    def allocate(self, slice_urn, rspec_string, expiration, options={}):
         '''
         GENI AM API v3 Allocate
         '''
         aggregate = ClabAggregate(self)
-        return aggregate.allocate(slice_urn, credentials, rspec_string, options)
+        return aggregate.allocate(slice_urn, rspec_string, expiration, options=options)
     
     
-    def renew(self, urns, credentials, expiration_time, options={}):
+    def renew(self, urns, expiration_time, options={}):
         '''
         GENI AM API v3 Renew
         '''
         aggregate = ClabAggregate(self)
-        return aggregate.renew(urns, credentials, expiration_time, options)
+        return aggregate.renew(urns, expiration_time, options=options)
     
     
-    def provision(self, urns, credentials, options={}):
+    def provision(self, urns, options={}):
         '''
         GENI AM API v3 Provision
         '''
         aggregate = ClabAggregate(self)
-        return aggregate.provision(urns, credentials, options)
+        return aggregate.provision(urns, options=options)
     
     
-    def status (self, urns, credentials, options={}):
+    def status (self, urns, options={}):
         '''
         GENI AM API v3 Status
         '''
         aggregate = ClabAggregate(self)
-        return aggregate.status(urns, credentials, options)
+        return aggregate.status(urns, options=options)
 
 
-    def perform_operational_action(self, urns, credentials, action, options={}):
+    def perform_operational_action(self, urns, action, options={}):
         '''
         GENI AM API v3 PerformOperationalAction
         '''
         aggregate = ClabAggregate(self)
-        return aggregate.perform_operational_action(urns, credentials, action, options)
+        return aggregate.perform_operational_action(urns, action, options=options)
         
      
-    def delete(self, urns, credentials, options):
+    def delete(self, urns, options={}):
         '''
         GENI AM API v3 Delete
         '''
         aggregate = ClabAggregate(self)
-        return aggregate.delete(urns, credentials, options)
+        return aggregate.delete(urns, options=options)
    
    
-    def shutdown(self, slice_urn, credentials, options={}):
+    def shutdown(self, slice_urn, options={}):
         '''
         GENI AM API v3 Shutdown
         '''
         aggregate = ClabAggregate(self)
-        return aggregate.shutdown(slice_urn, credentials, options)
+        return aggregate.shutdown(slice_urn, options=options)
     
     
     
