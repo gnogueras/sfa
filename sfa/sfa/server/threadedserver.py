@@ -150,6 +150,7 @@ class SecureXMLRPCServer(BaseHTTPServer.HTTPServer,SimpleXMLRPCServer.SimpleXMLR
         It it very similar to SimpleXMLRPCServer but it uses HTTPS for transporting XML data.
         """
         logger.debug("SecureXMLRPCServer.__init__, server_address=%s, cert_file=%s, key_file=%s"%(server_address,cert_file,key_file))
+        logger.debug("SecureXMLRPCServer HandlerClass=%s"%(HandlerClass))
         self.logRequests = logRequests
         self.interface = None
         self.key_file = key_file
@@ -268,6 +269,13 @@ class ThreadPoolMixIn(SocketServer.ThreadingMixIn):
         """
         try:
             request, client_address = self.get_request()
+            logger.debug ("threadedserver:handle_request  New request received. (request,client_addr)=(%s,%s)"%(request, client_address))
+            logger.debug ("request type: %s"%type(request))
+            logger.debug ("request state string: %s"%request.state_string())
+            logger.debug ("request app data: %s"%request.get_app_data())
+            logger.debug ("request read: %s"%request.read())
+
+            SSL.Connection.read()
         except socket.error:
             return
         if self.verify_request(request, client_address):

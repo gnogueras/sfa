@@ -8,20 +8,20 @@ Created on 06/02/2014
 from sfa.managers.driver import Driver
 from sfa.rspecs.rspec import RSpec
 from sfa.rspecs.version_manager import VersionManager
-from sfa.storage.model import RegRecord
 from sfa.util.cache import Cache
 from sfa.util.defaultdict import defaultdict
 from sfa.util.faults import MissingSfaInfo, UnknownSfaType, \
-    RecordNotFound, SfaNotImplemented, SliverDoesNotExist
+    RecordNotFound, SfaNotImplemented, SliverDoesNotExist, Forbidden
 from sfa.util.sfalogging import logger
 from sfa.util.sfatime import utcparse, datetime_to_string, datetime_to_epoch
 from sfa.util.xrn import Xrn, hrn_to_urn, get_leaf, urn_to_hrn
+from sfa.storage.model import RegRecord, SliverAllocation
+from sfa.trust.credential import Credential
 
 from sfa.clab.clab_aggregate import ClabAggregate
 from sfa.clab.clab_registry import ClabRegistry
 from sfa.clab.clab_shell import ClabShell
-import sfa.clab.clab_xrn
-from sfa.clab.clab_xrn import slicename_to_hrn, hostname_to_hrn
+from sfa.clab.clab_xrn import slicename_to_hrn, hostname_to_hrn, ClabXrn, type_of_urn, get_slice_by_sliver_urn, urn_to_slicename
 
 #
 # ClabShell is just an xmlrpc serverproxy where methods
@@ -66,6 +66,50 @@ class ClabDriver (Driver):
 #            if ClabDriver.cache is None:
 #                ClabDriver.cache = Cache()
 #            self.cache = ClabDriver.cache
+
+
+
+    def check_sliver_credentials(self, creds, urns):
+        '''
+        Function used in some methods from /sfa/sfa/methods.
+        It checks that there is a valid credential for each of the slices referred in the urns argument.
+        The slices can be referred by their urn or by the urn of a sliver contained in it.
+        
+        :param creds: list of available slice credentials
+        :type list (of Credential objects)
+        
+        :param urns: list of urns that refer to slices (directly or through a sliver)
+        :type list (of strings)
+        
+        :return nothing
+        :rtype void
+        '''
+        # build list of cred object hrns
+        slice_cred_names = []
+        for cred in creds:
+            slice_cred_hrn = Credential(cred=cred).get_gid_object().get_hrn()
+            slice_cred_names.append(ClabXrn(xrn=slice_cred_hrn).get_slicename())
+
+        # Get the slice names of all the slices included in the urn
+        slice_names = []
+        for urn in urns:
+            if type_of_urn(urn)=='sliver':
+                # URN of a sliver. Get the slice where the sliver is contained
+                slice = get_slice_by_sliver_urn(self, urn)
+                slice_names.append(slice['name'])
+            elif type_of_urn(urn)=='slice':
+                # URN of a slice
+                slice_names.append(urn_to_slicename(urn))
+        
+        if not slice_names:
+             raise Forbidden("sliver urn not provided")
+
+        # make sure we have a credential for every specified sliver ierd
+        for sliver_name in slice_names:
+            if sliver_name not in slice_cred_names:
+                msg = "Valid credential not found for target: %s" % sliver_name
+                raise Forbidden(msg)
+ 
 
 
 
