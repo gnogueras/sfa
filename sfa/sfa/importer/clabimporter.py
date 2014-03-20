@@ -44,7 +44,6 @@ class ClabImporter:
     '''
     
     def __init__ (self, auth_hierarchy, logger):
-        print "Method init of ClabImporter class"
         self.auth_hierarchy = auth_hierarchy
         self.logger=logger
     
@@ -95,18 +94,14 @@ class ClabImporter:
         interface_hrn = config.SFA_INTERFACE_HRN
         root_auth = config.SFA_REGISTRY_ROOT_AUTH
         shell = ClabShell (config)
-        
-        print "Running RUN method in ClabImporter class"
-        
+                
         # retrieve all existing SFA objects
         all_records = global_dbsession.query(RegRecord).all()
         
-        print '1: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
         # Delete all default records
         #for record in all_records:
         #    global_dbsession.delete(record)
         #    global_dbsession.commit()
-        #print '2: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
         #all_records = global_dbsession.query(RegRecord).all()
         
         # Dicts to avoid duplicates in SFA database
@@ -122,38 +117,26 @@ class ClabImporter:
         # Retrieve data from the CLab testbed and create dictionaries by id
         # SITE
         sites = [shell.get_testbed_info()]
-        print "SITES"
-        print sites
-        print "--------------------------------------------------------------------"
+        
         # USERS
         users = shell.get_users({})
-        print "USERS"
-        #print users
-        print "--------------------------------------------------------------------"
+        
         #users_by_id = dict ( [ ( user['id'], user) for user in users ] )
         # KEYS
         # auth_tokens of the users. Dict (user_id:[keys])
         
         # NODES
         nodes = shell.get_nodes({})
-        print "NODES"
-        #print nodes
-        print "--------------------------------------------------------------------"
-        #nodes_by_id = dict ( [ ( node['id'], node, ) for node in nodes ] )
+        
         # SLICES
         slices = shell.get_slices({})
-        print "SLICES"
-        #print slices
-        print "--------------------------------------------------------------------"
-        #slices_by_id = dict ( [ (slice['id'], slice ) for slice in slices ] )
+        
         
         # Import records to the SFA registry
         # SITE
         for site in sites:
-            print '$$$$$$$$$$$$$____________ SITEs _____________$$$$$$$$$$$$$'
             # Get hrn of the site (authority)
             site_hrn = _get_site_hrn(interface_hrn, site)
-            print site_hrn
             # Try to locate the site_hrn in the SFA records
             site_record=self.locate_by_type_hrn ('authority', site_hrn)
             
@@ -161,23 +144,17 @@ class ClabImporter:
                 # Create/Import record for the site authority
                 try:
                     urn = hrn_to_urn(site_hrn, 'authority')
-                    print urn
                     if not self.auth_hierarchy.auth_exists(urn):
                         self.auth_hierarchy.create_auth(urn)
-                        print "auth created!!!"
-                        print self.auth_hierarchy
                     auth_info = self.auth_hierarchy.get_auth_info(urn)
-                    print auth_info
                     # Create record for the site authority and add it to the Registry
-                    print "Ready for RegAuthority. site_hrn=%s, urn=%s, gid=%s, authority=%s"%(site_hrn, urn, auth_info.get_gid_object(), get_authority(site_hrn))
                     site_record = RegAuthority(hrn=site_hrn, gid=auth_info.get_gid_object(),
                                                pointer= -1,
                                                authority=get_authority(site_hrn))
                     site_record.just_created()
                     global_dbsession.add(site_record)
                     global_dbsession.commit()
-                    print '3: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
-                    self.logger.info("CLabImporter: imported authority (site) : %s" % site_record) 
+                    self.logger.info("CLabImporter: imported authority (site) : %s" % site_hrn) 
                     self.remember_record (site_record)
                 except:
                     # if the site import fails then there is no point in trying to import the
@@ -192,30 +169,25 @@ class ClabImporter:
             site_record.stale=False
             
             # DEBUG
-            print '*********** ALL RECORDS ***********'
-            all_records = global_dbsession.query(RegRecord).all()
-            for record in all_records: 
-                print record
+            #print '*********** ALL RECORDS ***********'
+            #all_records = global_dbsession.query(RegRecord).all()
+            #for record in all_records: 
+            #    print record
             
              
             # For the current site authority, import child entities/records
             
             # NODES
             for node in nodes:
-                print '$$$$$$$$$$$$$____________ NODES _____________$$$$$$$$$$$$$'
                 # Obtain parameters of the node: site_auth, site_name and hrn of the node
                 site_auth = get_authority(site_hrn)
-                print site_auth
                 site_name = site['name']
-                print site_name
                 node_hrn =  hostname_to_hrn(site_hrn, node['name'])
-                print node_hrn
                 # Reduce hrn up to 64 characters
                 if len(node_hrn) > 64: node_hrn = node_hrn[:64]
                 
                 # Try to locate the node_hrn in the SFA records
                 node_record = self.locate_by_type_hrn ('node', node_hrn )
-                print node_record
                 if not node_record:
                     # Create/Import record for the node
                     try:
@@ -231,8 +203,7 @@ class ClabImporter:
                         node_record.just_created()
                         global_dbsession.add(node_record)
                         global_dbsession.commit()
-                        print '3: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
-                        self.logger.info("CLabImporter: imported node: %s" % node_record)  
+                        self.logger.info("CLabImporter: imported node: %s" %node_hrn)  
                         self.remember_record (node_record)
                     except:
                         self.logger.log_exc("CLabImporter: failed to import node") 
@@ -243,24 +214,20 @@ class ClabImporter:
                 # Fresh record in SFA Registry
                 node_record.stale=False
                 # DEBUG
-                print '*********** ALL RECORDS ***********'
-                all_records = global_dbsession.query(RegRecord).all()
-                for record in all_records: 
-                    print record
+                #print '*********** ALL RECORDS ***********'
+                #all_records = global_dbsession.query(RegRecord).all()
+                #for record in all_records: 
+                #    print record
                 
     
             # USERS
             for user in users:
-                print '$$$$$$$$$$$$$____________ USERS _____________$$$$$$$$$$$$$'
                 # dummyimporter uses email... but Clab can use user['name']
                 user_hrn = username_to_hrn (site_hrn, user['name'])
                 # Reduce hrn up to 64 characters
                 if len(user_hrn) > 64: user_hrn = user_hrn[:64]
                 user_urn = hrn_to_urn(user_hrn, 'user')
                 
-                print user_hrn
-                print user_urn
-
                 # Try to locate the user_hrn in the SFA records
                 user_record = self.locate_by_type_hrn ('user', user_hrn)
 
@@ -277,26 +244,21 @@ class ClabImporter:
                             pubkey = key
                             try:
                                 pkey = convert_public_key(pubkey)
-                                print "key converted for user %s"%(user['name'])
-                                print pkey
                                 break
                             except:
                                 continue
                         if not pkey:
                             self.logger.warn('CLabImporter: unable to convert public key for %s' % user_hrn)
-                            print "rsa key not found among the keys for user %s. Create a new keypair"%(user['name'])
                             pkey = Keypair(create=True)
                     else:
                         # the user has no keys. Creating a random keypair for the user's gid
                         self.logger.warn("CLabImporter: user %s does not have a CLab public key"%user_hrn)
-                        print "auth_tokens empty for user %s"%(user['name'])
                         pkey = Keypair(create=True)
                     return (pubkey, pkey)
                 ###########################
                 
                 try:
                     if not user_record:
-                        print "Create new user record for user %s"%(user['name'])
                         # Create/Import record for the user
                         # Create a keypair for the node
                         (pubkey,pkey) = init_user_key (user)
@@ -311,11 +273,11 @@ class ClabImporter:
                         if pubkey: 
                             user_record.reg_keys=[RegKey (pubkey)]
                         else:
-                            self.logger.warning("No key found for user %s"%user_record)
+                            self.logger.warning("No key found for user %s"%user_hrn)
                         user_record.just_created()
                         global_dbsession.add (user_record)
                         global_dbsession.commit()
-                        self.logger.info("ClabImporter: imported person: %s" % user_record)
+                        self.logger.info("ClabImporter: imported person: %s" % user_hrn)
                         self.remember_record ( user_record )
 
                     else:
@@ -339,22 +301,20 @@ class ClabImporter:
                                 user_record.reg_keys=[]
                             else:
                                 user_record.reg_keys=[ RegKey (pubkey)]
-                            self.logger.info("CLabImporter: updated person: %s" % user_record)
+                            self.logger.info("CLabImporter: updated person: %s" % user_hrn)
                     user_record.email = "%s@clabwrap.eu"%(user['name'])
                     global_dbsession.commit()
-                    
-                    print '3: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
-                    
+                                        
                     # Fresh record in SFA Registry
                     user_record.stale=False
                 except:
                     self.logger.log_exc("CLabImporter: failed to import user %d %s"%(user['id'],user['name']))
             
             # DEBUG
-                print '*********** ALL RECORDS ***********'
-                all_records = global_dbsession.query(RegRecord).all()
-                for record in all_records: 
-                    print record         
+                #print '*********** ALL RECORDS ***********'
+                #all_records = global_dbsession.query(RegRecord).all()
+                #for record in all_records: 
+                #    print record         
                     
             # SLICES
             for slice in slices:
@@ -362,8 +322,6 @@ class ClabImporter:
                 slice_hrn = slicename_to_hrn(site_hrn, slice['name'])
                 # Try to locate the slice_hrn in the SFA records
                 slice_record = self.locate_by_type_hrn ('slice', slice_hrn)
-                print slice_hrn
-                print slice_record
                 
                 if not slice_record:
                     # Create/Import record for the slice
@@ -378,16 +336,15 @@ class ClabImporter:
                                                  pointer=slice['id'],
                                                  authority=get_authority(slice_hrn))
                         slice_record.just_created()
-                        print "Create new slice record for slice %s"%(slice['name'])
                         global_dbsession.add(slice_record)
                         global_dbsession.commit()
-                        self.logger.info("CLabImporter: imported slice: %s" % slice_record)  
+                        self.logger.info("CLabImporter: imported slice: %s" % slice_hrn)  
                         self.remember_record ( slice_record )
                     except:
                         self.logger.log_exc("CLabImporter: failed to import slice")
                 else:
                     # Slice record already in the SFA registry. Update?
-                    self.logger.warning ("Slice update not yet implemented")
+                    self.logger.warning ("Slice already existing in SFA Registry")
                     pass
                 
                 # Get current users associated with the slice
@@ -396,21 +353,11 @@ class ClabImporter:
                 slice_record.reg_researchers = \
                     [ self.locate_by_type_pointer ('user',user['id']) for user in users_of_slice]
                 global_dbsession.commit()
-                
-                print slice_record
-                print '5: Len all records %s'%(len(global_dbsession.query(RegRecord).all()))
-                
+                                
                 # Fresh record in SFA Registry 
                 slice_record.stale=False    
                 
-                
-         # DEBUG
-        print '*********** ALL RECORDS ***********'
-        all_records = global_dbsession.query(RegRecord).all()
-        for record in all_records: 
-            print record       
-                
-                
+     
         # Remove stale records. Old/non-fresh records that were in the SFA Registry
         
         # Preserve special records 
@@ -433,4 +380,9 @@ class ClabImporter:
                 global_dbsession.delete(record)
                 global_dbsession.commit()
             
-
+                
+         # DEBUG
+        print 'SFA REGISTRY - Result of Import:'
+        all_records = global_dbsession.query(RegRecord).all()
+        for record in all_records: 
+            print record  

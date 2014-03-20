@@ -261,7 +261,7 @@ class ClabAggregate:
         :rtype dict
     
         NOTE: ALLOCATE (GENI) = REGISTER (C-LAB)
-              Create slivers in Register state.
+              Create slivers in Register state. (by default, takes state from slice)
         
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#Allocate      
         
@@ -534,7 +534,7 @@ class ClabAggregate:
         # Get uris of slivers/slices from the urns list
         uris = [urn_to_uri(self.driver, urn) for urn in urns]
         
-        if action=='geni_start':
+        if action in ['geni_start', 'start']:
             # Start sliver or slice
             # SLIVER
             if is_sliver_list:    
@@ -545,7 +545,7 @@ class ClabAggregate:
                 for uri in uris:
                     self.driver.testbed_shell.update_slice_state(uri, 'start')
         
-        elif action=='geni_restart':
+        elif action in ['geni_restart', 'restart']:
             # Restart node that contains the slivers
             # SLIVER
             if is_sliver_list: 
@@ -562,7 +562,7 @@ class ClabAggregate:
                     for node in nodes_of_slice:
                         self.driver.testbed_shell.reboot_node(node['uri'])
         
-        elif action=='geni_stop':
+        elif action in ['geni_stop', 'stop']:
             # Not supported
             # Delete slivers/slices or set them to deploy?
             # SLIVER

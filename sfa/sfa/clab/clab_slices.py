@@ -54,7 +54,8 @@ class ClabSlices:
         if slice:
             # Slice exist
             # Set the set_state to Register because the slice will be modified
-            self.driver.testbed_shell.update_slice_state(slice['uri'], 'register')
+            #self.driver.testbed_shell.update_slice_state(slice['uri'], 'register')
+            # New version of controller allow to create slivers when slice state is Deploy or Start
             return slice
         
         else:
