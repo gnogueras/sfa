@@ -22,6 +22,8 @@ from sfa.clab.clab_aggregate import ClabAggregate
 from sfa.clab.clab_registry import ClabRegistry
 from sfa.clab.clab_shell import ClabShell
 from sfa.clab.clab_xrn import slicename_to_hrn, hostname_to_hrn, ClabXrn, type_of_urn, get_slice_by_sliver_urn, urn_to_slicename
+from sfa.clab.clab_logging import clab_logger
+
 
 #
 # ClabShell is just an xmlrpc serverproxy where methods
@@ -35,27 +37,26 @@ class ClabDriver (Driver):
 
     def __init__ (self, api):
         Driver.__init__ (self, api)
-        config = api.config
-        self.testbed_shell = ClabShell (config)
+        self.config = api.config
+        self.testbed_shell = ClabShell (self.config)
         self.cache=None
         
         # Debug print
-        print "SFA_INTERFACE_HRN: %s"%(config.SFA_INTERFACE_HRN)
-        print "SFA_REGISTRY_ROOT_AUTH: %s"%(config.SFA_REGISTRY_ROOT_AUTH)
-        print "SFA_GENERIC_FLAVOUR: %s"%(config.SFA_GENERIC_FLAVOUR)
-        print "SFA_CLAB_USER: %s"%(config.SFA_CLAB_USER)
-        print "SFA_CLAB_PASSWORD: %s"%(config.SFA_CLAB_PASSWORD)
-        print "SFA_CLAB_GROUP: %s"%(config.SFA_CLAB_GROUP)
-        print "SFA_CLAB_AUTO_SLICE_CREATION: %s"%(config.SFA_CLAB_AUTO_SLICE_CREATION)
-        print "SFA_CLAB_AUTO_NODE_CREATION: %s"%(config.SFA_CLAB_AUTO_NODE_CREATION)
-        print "SFA_CLAB_URL: %s"%(config.SFA_CLAB_URL)
-        
-        
+        print "SFA_INTERFACE_HRN: %s"%(self.config.SFA_INTERFACE_HRN)
+        print "SFA_REGISTRY_ROOT_AUTH: %s"%(self.config.SFA_REGISTRY_ROOT_AUTH)
+        print "SFA_GENERIC_FLAVOUR: %s"%(self.config.SFA_GENERIC_FLAVOUR)
+        print "SFA_CLAB_USER: %s"%(self.config.SFA_CLAB_USER)
+        print "SFA_CLAB_PASSWORD: %s"%(self.config.SFA_CLAB_PASSWORD)
+        print "SFA_CLAB_GROUP: %s"%(self.config.SFA_CLAB_GROUP)
+        print "SFA_CLAB_AUTO_SLICE_CREATION: %s"%(self.config.SFA_CLAB_AUTO_SLICE_CREATION)
+        print "SFA_CLAB_AUTO_NODE_CREATION: %s"%(self.config.SFA_CLAB_AUTO_NODE_CREATION)
+        print "SFA_CLAB_URL: %s"%(self.config.SFA_CLAB_URL)
+               
         # Get it from CONFIG
-        self.AUTHORITY = ".".join([config.SFA_INTERFACE_HRN,config.SFA_GENERIC_FLAVOUR])
-        self.TESTBEDNAME = config.SFA_GENERIC_FLAVOUR
-        self.AUTOMATIC_SLICE_CREATION = config.SFA_CLAB_AUTO_SLICE_CREATION
-        self.AUTOMATIC_NODE_CREATION = config.SFA_CLAB_AUTO_NODE_CREATION
+        self.AUTHORITY = ".".join([self.config.SFA_INTERFACE_HRN,self.config.SFA_GENERIC_FLAVOUR])
+        self.TESTBEDNAME = self.config.SFA_GENERIC_FLAVOUR
+        self.AUTOMATIC_SLICE_CREATION = self.config.SFA_CLAB_AUTO_SLICE_CREATION
+        self.AUTOMATIC_NODE_CREATION = self.config.SFA_CLAB_AUTO_NODE_CREATION
         #self.AUTHORITY = 'confine.clab'
         #self.TESTBEDNAME = 'C-Lab'
         #self.AUTOMATIC_SLICE_CREATION = True
@@ -66,7 +67,6 @@ class ClabDriver (Driver):
 #            if ClabDriver.cache is None:
 #                ClabDriver.cache = Cache()
 #            self.cache = ClabDriver.cache
-
 
 
     def check_sliver_credentials(self, creds, urns):
@@ -129,6 +129,7 @@ class ClabDriver (Driver):
         '''
         SFA Registry API Register
         '''
+        clab_logger.debug("%s:%s - Clab_Registry: register %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, hrn))
         registry = ClabRegistry(self)
         return registry.register(sfa_record, hrn, pub_key)
     
@@ -137,6 +138,7 @@ class ClabDriver (Driver):
         '''
         SFA Registry API Remove
         '''
+        clab_logger.debug("%s:%s - Clab_Registry: remove %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, sfa_record))
         registry = ClabRegistry(self)
         return registry.remove(sfa_record)
     
@@ -145,6 +147,7 @@ class ClabDriver (Driver):
         '''
         SFA Registry API Update
         '''
+        clab_logger.debug("%s:%s - Clab_Registry: update %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, hrn))
         registry = ClabRegistry(self)
         return registry.update(old_sfa_record, new_sfa_record, hrn, new_key)
 
@@ -153,6 +156,7 @@ class ClabDriver (Driver):
         '''
         SFA Registry API Update relation
         '''
+        clab_logger.debug("%s:%s - Clab_Registry: update relation"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
         registry = ClabRegistry(self)
         return registry.update_relation(subject_type, target_type, relation_name, subject_id, target_ids)
                                                                             
@@ -172,6 +176,7 @@ class ClabDriver (Driver):
         """
         GENI AM API v3 GetVersion
         """
+        clab_logger.debug("%s:%s - Clab_Aggregate: get version"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
         aggregate = ClabAggregate(self)
         version = aggregate.get_version()
         
@@ -186,6 +191,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 ListResources
         '''
+        clab_logger.debug("%s:%s - Clab_Aggregate: list resources"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
         aggregate = ClabAggregate(self)
         return aggregate.list_resources(options=options)
     
@@ -194,7 +200,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Describe
         '''
-        print "CLAB_DRIVER DESCRIBE METHOD"
+        clab_logger.debug("%s:%s - Clab_Aggregate: Describe %s "%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
         aggregate = ClabAggregate(self)
         return aggregate.describe(urns, options=options)    
     
@@ -203,6 +209,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Allocate
         '''
+        clab_logger.debug("%s:%s - Clab_Aggregate: allocate %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, slice_urn))
         aggregate = ClabAggregate(self)
         return aggregate.allocate(slice_urn, rspec_string, expiration, options=options)
     
@@ -211,6 +218,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Renew
         '''
+        clab_logger.debug("%s:%s - Clab_Aggregate: renew %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
         aggregate = ClabAggregate(self)
         return aggregate.renew(urns, expiration_time, options=options)
     
@@ -219,6 +227,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Provision
         '''
+        clab_logger.debug("%s:%s - Clab_Aggregate: provision %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
         aggregate = ClabAggregate(self)
         return aggregate.provision(urns, options=options)
     
@@ -227,6 +236,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Status
         '''
+        clab_logger.debug("%s:%s - Clab_Aggregate: status %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
         aggregate = ClabAggregate(self)
         return aggregate.status(urns, options=options)
 
@@ -235,6 +245,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 PerformOperationalAction
         '''
+        clab_logger.debug("%s:%s - Clab_Aggregate: perform operational action [%s] %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP,action,urns))
         aggregate = ClabAggregate(self)
         return aggregate.perform_operational_action(urns, action, options=options)
         
@@ -243,6 +254,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Delete
         '''
+        clab_logger.debug("%s:%s - Clab_Aggregate: delete %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
         aggregate = ClabAggregate(self)
         return aggregate.delete(urns, options=options)
    
@@ -251,6 +263,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Shutdown
         '''
+        clab_logger.debug("%s:%s - Clab_Aggregate: shutdown %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, slice_urn))
         aggregate = ClabAggregate(self)
         return aggregate.shutdown(slice_urn, options=options)
     

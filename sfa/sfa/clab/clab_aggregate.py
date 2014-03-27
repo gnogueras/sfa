@@ -26,7 +26,6 @@ from sfa.clab.clab_xrn import type_of_urn, urn_to_slicename, slicename_to_urn,\
 from sfa.clab.clab_xrn import urn_to_uri, get_node_by_urn, get_slice_by_urn, get_sliver_by_urn, get_slice_by_sliver_urn
 from sfa.clab.clab_slices import ClabSlices
 
-
 class ClabAggregate:
     """
     Aggregate Manager class for C-Lab. 
@@ -56,7 +55,7 @@ class ClabAggregate:
         
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#GetVersion
 
-        """
+        """        
         # Version by default: GENI 3
         version_manager = VersionManager()
         
@@ -104,7 +103,6 @@ class ClabAggregate:
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3/CommonConcepts#RSpecdatatype
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#ListResources
         """
-
         version_manager = VersionManager()
         version = version_manager.get_version('GENI 3')        
         rspec_version = version_manager._get_version(version.type, version.version, 'ad')
@@ -175,8 +173,6 @@ class ClabAggregate:
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#Describe
 
         """
-        print "CLAB AGGREGATE DESCRIBE METHOD"
-        
         version_manager = VersionManager()
         version = version_manager.get_version('GENI 3')        
         rspec_version = version_manager._get_version(version.type, version.version, 'manifest')
@@ -406,7 +402,7 @@ class ClabAggregate:
         
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#Provision
         
-        '''
+        '''        
         # Get geni_best_effort option
         geni_best_effort = options.get('geni_best_effort', 'true').lower()
         
@@ -684,6 +680,7 @@ class ClabAggregate:
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#Shutdown
         
         '''
+
         slice_uri = urn_to_uri(self.driver, slice_urn)
         self.driver.testbed_shell.update_slice_state(slice_uri, 'register')
         # Return true indicating success

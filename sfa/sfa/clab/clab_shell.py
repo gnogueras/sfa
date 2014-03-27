@@ -21,8 +21,10 @@ class ClabShell:
     
     def __init__ ( self, config ) :
         global controller
-        self.base_uri = 'http://172.24.42.141/api'
-        #base_uri=config.base_uri
+        
+        #self.base_uri = 'http://172.24.42.141/api'
+        self.base_uri = config.SFA_CLAB_URL
+        
         controller = Api(self.base_uri) #(config.CLAP_API_URL)
         try:
             controller.retrieve()
@@ -32,15 +34,16 @@ class ClabShell:
             raise UnexistingURI(self.base_uri, e.message)
         except ValueError:
             raise InvalidURI(self.base_uri)
-        
             
         # Use of a default user for the C-Lab SFAWrap
-        self.username='vct' #config.username
-        self.password='vct' #config.password
-        self.groupname='vct' #config.group
-        #controller.login(config.username, config.password)
+        #self.username='vct' 
+        #self.password='vct' 
+        #self.groupname='vct' 
+        
+        self.username = config.SFA_CLAB_USER
+        self.password = config.SFA_CLAB_PASSWORD 
+        self.groupname = config.SFA_CLAB_GROUP
         controller.login(self.username, self.password)
-        #self.groupname=config.groupname
     
     
     ###############

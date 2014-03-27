@@ -19,9 +19,26 @@ class Interface:
         self.client_type = client_type
   
     def get_url(self):
-        address_parts = self.addr.split('/')
-        address_parts[0] = address_parts[0] + ":" + str(self.port)
-        url =  "http://%s" %  "/".join(address_parts)
+        ####
+        if self.addr.startswith('https://'):
+            addr_aux = self.addr.split('https://')[1]
+            address_parts = addr_aux.split('/')
+            address_parts[0] = address_parts[0] + ":" + str(self.port)
+            url =  "https://%s" %  "/".join(address_parts)
+            
+        elif self.addr.startswith('http://'):
+            addr_aux = self.addr.split('http://')[1]
+            address_parts = addr_aux.split('/')
+            address_parts[0] = address_parts[0] + ":" + str(self.port)
+            url =  "http://%s" %  "/".join(address_parts)
+        else:
+            address_parts = self.addr.split('/')
+            address_parts[0] = address_parts[0] + ":" + str(self.port)
+            url =  "http://%s" %  "/".join(address_parts)    
+        ####
+        #address_parts = self.addr.split('/')
+        #address_parts[0] = address_parts[0] + ":" + str(self.port)
+        #url =  "http://%s" %  "/".join(address_parts)
         return url
 
     def server_proxy(self, key_file, cert_file, timeout=30):
