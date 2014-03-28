@@ -774,7 +774,12 @@ class ClabShell:
         :rtype dict  
         '''
         # Create/post the new user     
-        controller.users.post(data='{ "auth_tokens": "%s",  "description": "%s",  "name": "%s"}'%(auth_tokens, description, username))
+        response = controller.users.post(data='{ "auth_tokens": "%s",  "description": "%s",  "name": "%s"}'%(auth_tokens, description, username))
+        
+        # Check if user was correctly created 
+        if not response.ok:
+            raise OperationFailed('create user', 'response code: %s'%response.status_code)
+        
         # Get user ORM object 
         user_uri = self.get_users({'name':username})[0]['uri']
         user = self.get_by_uri_no_serialized(user_uri)
