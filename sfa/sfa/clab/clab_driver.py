@@ -129,7 +129,7 @@ class ClabDriver (Driver):
         '''
         SFA Registry API Register
         '''
-        clab_logger.debug("%s:%s - Clab_Registry: register %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, hrn))
+        clab_logger.debug("%s:%s - Clab_Registry: register %s \n SFA_record details: %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, hrn, sfa_record))
         registry = ClabRegistry(self)
         return registry.register(sfa_record, hrn, pub_key)
     
@@ -147,7 +147,7 @@ class ClabDriver (Driver):
         '''
         SFA Registry API Update
         '''
-        clab_logger.debug("%s:%s - Clab_Registry: update %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, hrn))
+        clab_logger.debug("%s:%s - Clab_Registry: update %s \n OLD SFA_record details: %s \n NEW SFA_record details: %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, hrn, old_sfa_record, new_sfa_record))
         registry = ClabRegistry(self)
         return registry.update(old_sfa_record, new_sfa_record, hrn, new_key)
 
@@ -156,7 +156,7 @@ class ClabDriver (Driver):
         '''
         SFA Registry API Update relation
         '''
-        clab_logger.debug("%s:%s - Clab_Registry: update relation"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
+        clab_logger.debug("%s:%s - Clab_Registry: update relation \n Details: %s (%s) is now '%s' for %s (%s) "%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, subject_id, subject_type, relation_name, target_ids, target_type))
         registry = ClabRegistry(self)
         return registry.update_relation(subject_type, target_type, relation_name, subject_id, target_ids)
                                                                             
@@ -209,7 +209,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Allocate
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: allocate %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, slice_urn))
+        clab_logger.debug("%s:%s - Clab_Aggregate: allocate %s \n RSpec details: %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, slice_urn, rspec_string))
         aggregate = ClabAggregate(self)
         return aggregate.allocate(slice_urn, rspec_string, expiration, options=options)
     
@@ -245,7 +245,7 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 PerformOperationalAction
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: perform operational action [%s] %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP,action,urns))
+        clab_logger.debug("%s:%s - Clab_Aggregate: perform operational action [%s] on %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP,action,urns))
         aggregate = ClabAggregate(self)
         return aggregate.perform_operational_action(urns, action, options=options)
         

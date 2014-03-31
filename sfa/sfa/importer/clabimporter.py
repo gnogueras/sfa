@@ -379,10 +379,147 @@ class ClabImporter:
                 self.logger.info("CLabImporter: deleting stale record: %s" % record)
                 global_dbsession.delete(record)
                 global_dbsession.commit()
-            
                 
-         # DEBUG
+        # DEBUG
         print 'SFA REGISTRY - Result of Import:'
         all_records = global_dbsession.query(RegRecord).all()
         for record in all_records: 
             print record  
+        
+        
+    def import_single_node(self, nodename):
+        config = Config ()
+        interface_hrn = config.SFA_INTERFACE_HRN
+        root_auth = config.SFA_REGISTRY_ROOT_AUTH
+        shell = ClabShell (config)
+        
+        self.logger.debug("Import Single node: %s"%nodename)
+                
+        # retrieve all existing SFA objects
+        all_records = global_dbsession.query(RegRecord).all()
+        
+        # Dicts to avoid duplicates in SFA database
+        # create dict keyed by (type,hrn) 
+        self.records_by_type_hrn = dict([((record.type, record.hrn), record) for record in all_records ] )
+        # create dict keyed by (type,pointer) 
+        self.records_by_type_pointer = dict([((record.type, record.pointer), record) for record in all_records if record.pointer != -1])
+        
+        # Retrieve data from the CLab testbed and create dictionaries by id
+        # SITE
+        site = shell.get_testbed_info()
+        
+        # NODES
+        node = shell.get_node_by(node_name=nodename)
+        
+        # Import records to the SFA registry
+        # SITE
+        # Get hrn of the site (authority)
+        site_hrn = _get_site_hrn(interface_hrn, site)
+        # Try to locate the site_hrn in the SFA records
+        #site_record=self.locate_by_type_hrn ('authority', site_hrn)
+                
+        # NODE
+        # Obtain parameters of the node: site_auth, site_name and hrn of the node
+        site_auth = get_authority(site_hrn)
+        site_name = site['name']
+        node_hrn =  hostname_to_hrn(site_hrn, node['name'])
+        # Reduce hrn up to 64 characters
+        if len(node_hrn) > 64: node_hrn = node_hrn[:64]
+        
+        # Try to locate the node_hrn in the SFA records
+        node_record = self.locate_by_type_hrn ('node', node_hrn )
+        if not node_record:
+            # Create/Import record for the node
+            try:
+                # Create a keypair for the node
+                pkey = Keypair(create=True)
+                # Obtain parameters 
+                urn = hrn_to_urn(node_hrn, 'node')
+                node_gid = self.auth_hierarchy.create_gid(urn, create_uuid(), pkey)
+                # Create record for the node and add it to the Registry
+                node_record = RegNode (hrn=node_hrn, gid=node_gid, 
+                                       pointer =node['id'],
+                                       authority=get_authority(node_hrn))
+                node_record.just_created()
+                global_dbsession.add(node_record)
+                global_dbsession.commit()
+                self.logger.info("CLabImporter: imported node: %s" %node_hrn)  
+                self.remember_record (node_record)
+            except:
+                self.logger.log_exc("CLabImporter: failed to import node") 
+        else:
+            # Node record already in the SFA registry. Update?
+            pass
+                
+    
+    
+    def import_single_slice(self, slicename):
+        config = Config ()
+        interface_hrn = config.SFA_INTERFACE_HRN
+        root_auth = config.SFA_REGISTRY_ROOT_AUTH
+        shell = ClabShell (config)
+        
+        self.logger.debug("Import Single slice: %s"%slicename)
+                
+        # retrieve all existing SFA objects
+        all_records = global_dbsession.query(RegRecord).all()
+        
+        # Dicts to avoid duplicates in SFA database
+        # create dict keyed by (type,hrn) 
+        self.records_by_type_hrn = dict([((record.type, record.hrn), record) for record in all_records ] )
+        # create dict keyed by (type,pointer) 
+        self.records_by_type_pointer = dict([((record.type, record.pointer), record) for record in all_records if record.pointer != -1])
+        
+        # Retrieve data from the CLab testbed and create dictionaries by id
+        # SITE
+        site = shell.get_testbed_info()
+
+        # SLICES
+        slice = shell.get_slice_by(slice_name=slicename)
+        
+        # Import records to the SFA registry
+        # SITE
+        # Get hrn of the site (authority)
+        site_hrn = _get_site_hrn(interface_hrn, site)
+        # Try to locate the site_hrn in the SFA records
+        #site_record=self.locate_by_type_hrn ('authority', site_hrn)
+        
+        # For the current site authority, import child entities/records    
+        # SLICES
+        # Obtain parameters of the node: site_auth, site_name and hrn of the slice
+        slice_hrn = slicename_to_hrn(site_hrn, slice['name'])
+        # Try to locate the slice_hrn in the SFA records
+        slice_record = self.locate_by_type_hrn ('slice', slice_hrn)
+        
+        if not slice_record:
+            # Create/Import record for the slice
+            try:
+                #Create a keypair for the slice
+                pkey = Keypair(create=True)
+                # Obtain parameters
+                urn = hrn_to_urn(slice_hrn, 'slice')
+                slice_gid = self.auth_hierarchy.create_gid(urn, create_uuid(), pkey)
+                # Create record for the slice and add it to the Registry
+                slice_record = RegSlice (hrn=slice_hrn, gid=slice_gid, 
+                                         pointer=slice['id'],
+                                         authority=get_authority(slice_hrn))
+                slice_record.just_created()
+                global_dbsession.add(slice_record)
+                global_dbsession.commit()
+                self.logger.info("CLabImporter: imported slice: %s" % slice_hrn)  
+                self.remember_record ( slice_record )
+            except:
+                self.logger.log_exc("CLabImporter: failed to import slice")
+        else:
+            # Slice record already in the SFA registry. Update?
+            self.logger.warning ("Slice already existing in SFA Registry")
+            pass
+        
+        # Get current users associated with the slice
+        users_of_slice = shell.get_users_by_slice(slice)
+        # record current users associated with the slice
+        slice_record.reg_researchers = \
+            [ self.locate_by_type_pointer ('user',user['id']) for user in users_of_slice]
+        global_dbsession.commit()
+        
+        

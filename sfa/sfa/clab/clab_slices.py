@@ -11,8 +11,12 @@ from sfa.util.sfalogging import logger
 from sfa.util.sfatime import utcparse, datetime_to_epoch
 from sfa.util.xrn import Xrn, get_leaf, get_authority, urn_to_hrn
 
-
 from sfa.clab.clab_xrn import urn_to_uri, urn_to_slicename, get_slice_by_urn
+from sfa.clab.clab_logging import clab_logger
+from sfa.importer.clabimporter import ClabImporter
+
+from sfa.trust.hierarchy import Hierarchy
+from sfa.util.config import Config
 
 class ClabSlices:
     '''
@@ -49,26 +53,29 @@ class ClabSlices:
         :returns C-lab slice dict
         :rtype dict
         '''
-        # Get slice
-        slice = get_slice_by_urn(self.driver, slice_urn)
-        if slice:
+        try:
+            # Get slice
+            slice = get_slice_by_urn(self.driver, slice_urn)
             # Slice exist
             # Set the set_state to Register because the slice will be modified
             #self.driver.testbed_shell.update_slice_state(slice['uri'], 'register')
             # New version of controller allow to create slivers when slice state is Deploy or Start
+            clab_logger.debug("Verify_Slice in Allocate: Slice exists %s"%slice['name'])
             return slice
-        
-        else:
+        except Exception:
             # Slice does not exist
             if creation_flag:
                 # create Slice
                 slicename = urn_to_slicename(slice_urn)
                 # TODO: get group uri from credentials
-                group_uri='http://172.24.42.141/api/groups/1'
-                created_slice = self.driver.testbed_shell.create_slice(slicename, group_uri)
+                #group_uri='http://172.24.42.141/api/groups/1'
+                created_slice = self.driver.testbed_shell.create_slice(slicename)
+                self.import_slice_to_registry(created_slice['name'])
+                clab_logger.debug("Verify_Slice in Allocate: Slice did not exist. Slice created: %s"%created_slice['name'])
                 return created_slice
             else:
                 # Raise error or return empty dict
+                clab_logger.debug("Verify_Slice in Allocate: Slice did not exists. Creation not allowed!")
                 return {}
 
     
@@ -111,54 +118,70 @@ class ClabSlices:
         for real testbed. By default, creation_flag=false
         '''
         # Get slice uri
+        # The slice does exist (verify_slice called before)
         slice_uri = urn_to_uri(self.driver, slice_urn)
-        
-        if node_element['component_id'] and node_element['component_manager_id'] in node_element: 
+                
+        if node_element['component_id'] and node_element['component_manager_id']: 
             # Bound node specified
-            # component_id = URN of the node | component_manager_id = URN of the authority
-            node_uri = urn_to_uri(self.driver, node_element['component_id'])
-            node = self.driver.testbed_shell.get_node_by_uri(node_uri)
             
-            if node:
+            try:
+                # component_id = URN of the node | component_manager_id = URN of the authority
+                node_uri = urn_to_uri(self.driver, node_element['component_id'])
+                node = self.driver.testbed_shell.get_node_by(node_uri=node_uri)
                 # Required bound exists
+                clab_logger.debug("Verify_Node in Allocate: specified bound node exists: %s"%node['name'])
                 # node available for the slice?
                 if node not in self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri):
                     # Node already contains an sliver for this slice
                     # Delete old sliver
                     old_sliver = self.driver.testbed_shell.get_slivers({'node_uri':node_uri, 'slice_uri':slice_uri})[0]
                     self.driver.testbed_shell.delete_sliver(old_sliver['uri'])
+                    clab_logger.debug("Verify_Node in Allocate: sliver '%s' deleted from node %s"%(old_sliver['id'], node['name']))
                 # Node is available
                 return node
-            
-            else:
+            except Exception:
                 # Required bound node does not exist
                 if creation_flag:
                     # Create node
                     node_name = node_element['client_id'] # cient_id = node name
                     # TODO: get group uri from credentials
-                    group_uri='http://172.24.42.141/api/groups/1'
-                    created_node = self.driver.testbed_shell.create_node({'name':node_name, 'group_uri':group_uri})
+                    #group_uri='http://172.24.42.141/api/groups/1'
+                    #created_node = self.driver.testbed_shell.create_node({'name':node_name, 'group_uri':group_uri})
+                    created_node = self.driver.testbed_shell.create_node({'name':node_name})
+                    self.import_node_to_registry(created_node['name'])
+                    clab_logger.debug("Verify_Node in Allocate: specified bound node did not exist. Node created: %s"%created_node['name'])
                     return created_node
                 
                 else:
                     # Return empty dict, raise an exception
+                    clab_logger.debug("Verify_Node in Allocate: specified bound node did not exist. Creation not allowed!")
                     return {} 
                 
         else: 
-            # Bound node not specified
+            # Bound node not specified            
             available_nodes = self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri)
             if available_nodes:
                 randomly_selected = random.randint(0, len(available_nodes)-1)
                 node = available_nodes[randomly_selected]
+                clab_logger.debug("Verify_Node in Allocate: node not specified. Randomly select available node %s"%node['name'])
             else:
                 node = {}
+                clab_logger.debug("Verify_Node in Allocate: node not specified. No available nodes!")
             return node
     
 
+    def import_node_to_registry(self, nodename):
+        auth_hierarchy = Hierarchy ()
+        clab_importer = ClabImporter(auth_hierarchy, clab_logger)
+        clab_importer.import_single_node(nodename)
     
-    
+    def import_slice_to_registry(self, slicename):
+        auth_hierarchy = Hierarchy ()
+        clab_importer = ClabImporter(auth_hierarchy, clab_logger)
+        clab_importer.import_single_slice(slicename)
 
-                 
+            
+            
         
     
     
