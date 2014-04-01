@@ -171,11 +171,23 @@ class ClabSlices:
     
 
     def import_node_to_registry(self, nodename):
+        '''
+        Method to import a node created in the testbed to the SFA Registry
+        
+        :param nodename: name of the node being imported
+        :type string        
+        '''
         auth_hierarchy = Hierarchy ()
         clab_importer = ClabImporter(auth_hierarchy, clab_logger)
         clab_importer.import_single_node(nodename)
     
     def import_slice_to_registry(self, slicename):
+        '''
+        Method to import a slice created in the testbed to the SFA Registry
+        
+        :param slicename: name of the node being imported
+        :type string        
+        '''
         auth_hierarchy = Hierarchy ()
         clab_importer = ClabImporter(auth_hierarchy, clab_logger)
         clab_importer.import_single_slice(slicename)

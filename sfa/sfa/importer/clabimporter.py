@@ -388,6 +388,15 @@ class ClabImporter:
         
         
     def import_single_node(self, nodename):
+        '''
+        Method to import a single node from the testbed database to the SFA Registry.
+        The node being imported is specified by name. 
+        The method is used in the verify_node method (clab_slices.py) when a node is automatically
+        created in the testbed database.
+        
+        :param nodename: name of the node being imported
+        :type string        
+        '''
         config = Config ()
         interface_hrn = config.SFA_INTERFACE_HRN
         root_auth = config.SFA_REGISTRY_ROOT_AUTH
@@ -454,6 +463,15 @@ class ClabImporter:
     
     
     def import_single_slice(self, slicename):
+        '''
+        Method to import a single slice from the testbed database to the SFA Registry.
+        The slice being imported is specified by name. 
+        The method is used in the verify_slice method (clab_slices.py) when a slice is automatically
+        created in the testbed database.
+        
+        :param slicename: name of the slice being imported
+        :type string        
+        '''
         config = Config ()
         interface_hrn = config.SFA_INTERFACE_HRN
         root_auth = config.SFA_REGISTRY_ROOT_AUTH
