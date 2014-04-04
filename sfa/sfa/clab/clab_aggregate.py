@@ -1061,7 +1061,7 @@ class ClabAggregate:
         :rtype dict
         '''  
         template = sliver ['template']
-        if not template: 
+        if template in ['null', '(from slice)', '(from sliver defaults)', "(from slice's sliver defaults)"]: 
             # Get template from the slice
             template_uri = self.driver.testbed_shell.get_slice_by(slice_uri=sliver['slice']['uri'])['template']['uri']
             template = self.driver.testbed_shell.get_by_uri(template_uri)

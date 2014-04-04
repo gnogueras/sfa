@@ -67,7 +67,8 @@ def hostname_to_hrn (auth, hostname):
     :returns: Node's hrn
     :rtype: string
     """
-    return ClabXrn(auth=auth, hostname=hostname).get_hrn()
+    escaped_hostname = escape_testbed_obj_names(hostname)
+    return ClabXrn(auth=auth, hostname=escaped_hostname).get_hrn()
 
 def hostname_to_urn(auth, hostname):
     """
@@ -98,7 +99,8 @@ def slicename_to_hrn (auth, slicename):
     :returns: Slice's hrn
     :rtype: string
     """
-    return ClabXrn(auth=auth, slicename=slicename).get_hrn()
+    escaped_slicename = escape_testbed_obj_names(slicename)
+    return ClabXrn(auth=auth, slicename=escaped_slicename).get_hrn()
 
 
 def slicename_to_urn (auth, slicename):
@@ -182,7 +184,8 @@ def slivername_to_hrn (auth, slivername):
     :returns: Sliver's hrn.
     :rtype: string
     """
-    ClabXrn(auth=auth, slivername=slivername).get_hrn()
+    escaped_slivername = escape_testbed_obj_names(slivername)
+    ClabXrn(auth=auth, slivername=escaped_slivername).get_hrn()
 
 def slivername_to_urn (auth, slivername):
     """
@@ -279,7 +282,8 @@ def username_to_hrn (auth, username):
     :returns: Node's hrn
     :rtype: string
     """
-    return ClabXrn(auth=auth, username=username).get_hrn()
+    escaped_username = escape_testbed_obj_names(username)
+    return ClabXrn(auth=auth, username=escaped_username).get_hrn()
 
 def username_to_urn(auth, username):
     """
@@ -295,6 +299,28 @@ def username_to_urn(auth, username):
     :rtype: string
     """
     return ClabXrn(auth=auth, username=username).get_urn()
+
+def escape_testbed_obj_names(object_name):
+    """
+    Escape names of objects from the testbed (nodes, users, slices, slivers...) 
+    to avoid/replace characters/sequences of characters that might produce errors 
+    or missinterpretations when obtaining the correspondind hrns. 
+    
+    :param object_name: testbed-specific name of an object (user, node, slice, sliver...)
+    :type string.
+
+    :returns: escaped name replaing dangerous characters
+    :rtype: string
+    """
+    escaped_name = object_name
+    
+    # Replace "." with double underscore "__"
+    # "." gives problems because is interpreted as subauthority
+    if "." in object_name:
+        escaped_name = object_name.replace(".","__")
+    
+    return escaped_name
+    
 
 ###########################################
 # Special translation methods using driver
