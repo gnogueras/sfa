@@ -37,7 +37,7 @@ class ClabAggregate:
         self.AUTHORITY = driver.AUTHORITY
         self.AUTOMATIC_SLICE_CREATION = driver.AUTOMATIC_SLICE_CREATION
         self.AUTOMATIC_NODE_CREATION = driver.AUTOMATIC_NODE_CREATION
-        
+        self.EXP_DATA_DIR = 'TO_BE_CONFIGURED'
         
         
     ##################################
@@ -297,6 +297,9 @@ class ClabAggregate:
             # create the sliver
             created_sliver = self.driver.testbed_shell.create_sliver(slice['uri'], bound_node['uri'], 
                                                                      interfaces_definition, properties)
+            # force 'Register' state to the created sliver
+            self.driver.testbed_shell.update_sliver_state(created_sliver['uri'], 'register')
+            
         # prepare return struct 
         return self.describe([slice_urn], credentials, options)
 
@@ -403,6 +406,18 @@ class ClabAggregate:
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#Provision
         
         '''        
+                
+        # DEBUG print options field
+        logger.debug("clab_aggregate/PROVISION options field: %s"%options)
+
+        # Get geni_users option
+        geni_users_list = options.get('geni_users')
+        
+        # Create the exp-data file to push the public keys of SFA users to the provisioned sliver/slice
+        exp_data_file = self.create_exp_data(self.EXP_DATA_DIR, geni_users_list)
+        logger.debug("PROVISION - exp-data-file created: %s"%exp_data_file)
+        
+        
         # Get geni_best_effort option
         geni_best_effort = options.get('geni_best_effort', 'true').lower()
         
@@ -411,29 +426,40 @@ class ClabAggregate:
         
         # SLIVER
         if type_of_urn(urns[0])=='sliver':    
-            # Get uris of slivers from the urns list
-            uris = [urn_to_uri(self.driver, urn) for urn in urns]
-            for uri in uris:
-                self.driver.testbed_shell.update_sliver_state(uri, 'deploy')
+            # Get sliver_uris of slivers from the urns list
+            sliver_uris = [urn_to_uri(self.driver, urn) for urn in urns]
+            for sliver_uri in sliver_uris:
+                # Upload the exp-data file to push the public keys of the SFA user
+                self.driver.testbed_shell.upload_exp_data_to_sliver(exp_data_file, sliver_uri)
+                # Set the sliver state to Deploy
+                self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
             
-            # MANAGEMENT FROM SLICE
-            # Get uris of slivers from the urns list
-            #uris = [urn_to_uri(self.driver, urn) for urn in urns]
-            # Set sliver state to 'from_slice'
-            #for uri in uris:
-            #    self.driver.testbed_shell.update_sliver_state(uri, 'null')    
+            # Update the slice state for the changes in the sliver to have effect
+            # Will not affect other slivers since they will have a lower set_state   
             # Get the slice uri of the slivers
-            #slice_uri = self.driver.testbed_shell.get_sliver_by(sliver_uri=uris[0])['slice']['uri']
+            slice_uri = self.driver.testbed_shell.get_sliver_by(sliver_uri=sliver_uris[0])['slice']['uri']
             # Set slice state to 'deploy'
-            #self.driver.testbed_shell.update_slice_state(slice_uri, 'deploy')  
+            self.driver.testbed_shell.update_slice_state(slice_uri, 'deploy')  
                 
         
         # SLICE
         elif type_of_urn(urns[0])=='slice':
-            # Get uris of slices from the urns list
-            uris = [urn_to_uri(self.driver, urn) for urn in urns]
-            for uri in uris:
-                self.driver.testbed_shell.update_slice_state(uri, 'deploy')
+            # Get sliver_uris of slices from the urns list
+            slice_uris = [urn_to_uri(self.driver, urn) for urn in urns]
+            for slice_uri in slice_uris:
+                # Upload the exp-data file to push the public keys of the SFA user
+                self.driver.testbed_shell.upload_exp_data_to_slice(exp_data_file, slice_uri)
+                # Set the slice state to Deploy
+                self.driver.testbed_shell.update_slice_state(slice_uri, 'deploy')
+                
+                # Update the state of all the slivers contained in the slice
+                # If the set_state of the sliver was lower, the changes in the slice would not affect its slivers 
+                slivers = self.driver.testbed_shell.get_slivers_by_slice(slice_uri=slice_uri)
+                for sliver in slivers:
+                    self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy')
+        
+        # Clean the directory structure and files of the exp-data file
+        self.clean_exp_data(self.EXP_DATA_DIR)
         
         # Prepare and return the struct (use describe function)   
         version_manager = VersionManager()
@@ -696,6 +722,109 @@ class ClabAggregate:
     # URN/HRN (SFA standard)
     # GENI API
     ##################################
+    
+    def create_exp_data(self, exp_data_dir, geni_users_list):
+        '''
+        Method to create a experiment-data file that will be uploaded to the sliver during the 
+        Provision (Deploy in SFA) phase. The experiment data consists of a directory structure
+        with a script that will pushed the public keys of the SFA user to the created sliver when
+        the sliver is started and available. 
+        
+        :param exp_data_dir: directory where the files and dirs for preparing the exp-data will be created
+        :type exp_data_dir: string
+        
+        :param geni_users_list: list of dicts (geni_user type) containing the public keys of the SFA users 
+        :type geni_users_list: list
+        
+        :return void
+        :rtype None
+        '''
+        import os
+        import subprocess
+        
+        exp_data_dir='/home/gerard/clab_sfawrap/experiment_data'
+
+        # Directory and file for experiment data
+        directory=os.path.join(exp_data_dir, 'temp/etc') 
+        file_path =os.path.join(directory, 'rc.local')
+        
+        # Create directory if it does not exist yet
+        if not os.path.exists(directory):
+            logger.debug("DIRECTORY %s does not exist. Create!"%directory)
+            os.makedirs(directory)
+        
+        # Prepare content of the /etc/rc.local script
+        script_content= \
+        '#!/bin/bash \n\
+# \n\
+# rc.local \n\
+# \n\
+# This script is executed at the end of each multiuser runlevel. \n\
+# Make sure that the script will "exit 0" on success or any other \n\
+# value on error. \n\
+# \n\
+# Script invoked by SFAWrap C-Lab. \n\
+# The script is placed in the created slivers through an exp-data file uploaded to the sliver \n\
+# The exp-data file is provided during the Deploy (Provision in SFA) phase. \n\
+# The script adds the ssh-rsa public key of the SFA user that created the slice \n\
+# to the /root/.ssh/authorized_keys file.  \n\
+# The SFA will be able to ssh the created sliver with his public key. \n\
+#  \n\
+# Create .ssh directory if it does not exist \n\
+mkdir -p /root/.ssh  \n\
+# Append the ssh-rsa public keys of the user \n'
+        
+        # Add a line in the script for every key of every user that has to be pushed
+        for user in geni_users_list:
+            for key in user['keys']:
+                script_content += 'echo "%s" >> /root/.ssh/authorized_keys \n'%key
+        script_content += 'exit 0'
+        logger.debug("create_exp_data. Script rc.local: \n%s"%script_content)
+        
+        # Create /etc/rc.local script 
+        target = open (file_path, 'a')
+        target.write(script_content)
+        target.close()
+        logger.debug("FILE %s created!"%file_path)
+        
+        # Compress the sirectory structure to generate the exp-data file
+        compressed_file_name = os.path.join(exp_data_dir, 'exp-data-temp.tgz')
+        dir_to_compress = os.path.join(exp_data_dir, 'temp')
+        cmd='tar -czvf %s --numeric-owner --group=root --owner=root -C %s .'%(compressed_file_name,dir_to_compress)
+        subprocess.call(cmd, shell=True)
+        logger.debug("DIRECTORY %s compressed to FILE %s"%(dir_to_compress,compressed_file_name))
+        
+        # return the path of the created compressed file
+        return compressed_file_name
+    
+    
+    def clean_exp_data(self, exp_data_dir):
+        '''
+        Method to clean the files generated by the method create_experiment_data.
+        It is convinient to clean all these files because they are temporary. Once the create_experiment_data
+        method returns, these files are not used anymore.
+        
+        :param exp_data_dir: directory where the files and dirs for preparing the exp-data will be created
+        :type exp_data_dir: string
+        
+        :return void
+        :rtype None
+        '''
+        import os
+        import shutil
+        
+        exp_data_dir='~/clab_sfawrap/experiment_data'
+
+        # Compressed file and directory structure to delete
+        compressed_file_name = os.path.join(exp_data_dir, 'exp-data-temp.tgz')
+        dir_to_compress = os.path.join(exp_data_dir, 'temp')
+        
+        # remove compressed file and directory structure
+        os.remove(compressed_file_name)
+        shutil.rmtree(dir_to_compress)
+
+
+        
     
     #####################################
     # GENI realted and translationmethods
@@ -1060,11 +1189,17 @@ class ClabAggregate:
         :returns dictionary containing the Rspec specific disk image 
         :rtype dict
         '''  
-        template = sliver ['template']
-        if template in ['null', '(from slice)', '(from sliver defaults)', "(from slice's sliver defaults)"]: 
-            # Get template from the slice
+        # The filed sliver['template'] or slice['template'] contains the uri of the template
+        template = sliver['template']
+        if not template or template in ['null', '(from slice)', '(from sliver defaults)', "(from slice's sliver defaults)"]: 
+            # Get template_uri from the slice
             template_uri = self.driver.testbed_shell.get_slice_by(slice_uri=sliver['slice']['uri'])['template']['uri']
-            template = self.driver.testbed_shell.get_by_uri(template_uri)
+        else: 
+            # Get the template uri from the dictionary of the sliver
+            template_uri = template['uri']
+        # Retrieve the template object from the template_uri
+        template = self.driver.testbed_shell.get_by_uri(template_uri)
+        
         template_rspec = dict([('name', template['name']), ('os', template['type']), ('description', template['description']) ])
         return template_rspec                        
         

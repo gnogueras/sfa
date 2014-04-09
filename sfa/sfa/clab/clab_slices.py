@@ -11,7 +11,7 @@ from sfa.util.sfalogging import logger
 from sfa.util.sfatime import utcparse, datetime_to_epoch
 from sfa.util.xrn import Xrn, get_leaf, get_authority, urn_to_hrn
 
-from sfa.clab.clab_xrn import urn_to_uri, urn_to_slicename, get_slice_by_urn
+from sfa.clab.clab_xrn import urn_to_uri, urn_to_slicename, get_slice_by_urn, urn_to_nodename
 from sfa.clab.clab_logging import clab_logger
 from sfa.importer.clabimporter import ClabImporter
 
@@ -126,6 +126,7 @@ class ClabSlices:
             
             try:
                 # component_id = URN of the node | component_manager_id = URN of the authority
+                nodename=urn_to_nodename(node_element['component_id'])
                 node_uri = urn_to_uri(self.driver, node_element['component_id'])
                 node = self.driver.testbed_shell.get_node_by(node_uri=node_uri)
                 # Required bound exists
@@ -154,15 +155,15 @@ class ClabSlices:
                 
                 else:
                     # Return empty dict, raise an exception
-                    clab_logger.debug("Verify_Node in Allocate: specified bound node did not exist. Creation not allowed!")
+                    clab_logger.debug("Verify_Node in Allocate: specified bound node did not exist (%s). Creation not allowed!"%node_element['client_id'])
                     return {} 
                 
         else: 
             # Bound node not specified            
-            available_nodes = self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri)
-            if available_nodes:
-                randomly_selected = random.randint(0, len(available_nodes)-1)
-                node = available_nodes[randomly_selected]
+            available_production_nodes = self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri)
+            if available_production_nodes:
+                randomly_selected = random.randint(0, len(available_production_nodes)-1)
+                node = available_production_nodes[randomly_selected]
                 clab_logger.debug("Verify_Node in Allocate: node not specified. Randomly select available node %s"%node['name'])
             else:
                 node = {}

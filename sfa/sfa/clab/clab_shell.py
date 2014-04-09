@@ -231,6 +231,8 @@ class ClabShell:
         :returns Node dictionary of the specified node
         :rtype dict
         '''
+        from sfa.clab.clab_logging import clab_logger
+        clab_logger.debug("CLAB_SHELL:GET NODE BY  node_uri=%s, node_name=%s, node_id=%s"%(node_uri, node_name, node_id))
         if node_uri:
             node = self.get_by_uri(node_uri)
         elif node_name:
@@ -554,7 +556,12 @@ class ClabShell:
         # Get available nodes (nodes in all_nodes and not in nodes_of_slice)
         # avialable_nodes is a list of dictionaries
         available_nodes = [node for node in all_nodes if node not in nodes_of_slice]
-        return available_nodes
+        # Get available nodes in production state
+        available_production_nodes=[]
+        for available_node in available_nodes:
+            if self.get_node_current_state(node=available_node) == 'production':
+                available_production_nodes.append(available_node)
+        return available_production_nodes
     
     
     def get_sliver_numeric_id(self, sliver=None, sliver_uri=None, sliver_name=None):
@@ -702,7 +709,7 @@ class ClabShell:
         if template_uri: 
             template = self.get_by_uri(template_uri)
         else:
-            template = controller.templates.retrieve()[1]
+            template = controller.templates.retrieve()[3]
             
         # Create slice
         try:
@@ -1050,7 +1057,39 @@ class ClabShell:
         except controller.ResponseStatusError as e:
             raise OperationFailed('update user', e.message)
         return True
-
+    
+    
+    def upload_exp_data_to_sliver(self, exp_data_file, sliver_uri):
+        '''
+        Method to upload the experiment data file to the given sliver.
+        The experiment data file is used to push the public key of the SFA users
+        to the sliver during the Deploy/Provision phase.
+        
+        :param exp_data_file: path to the local experiment data file being uploaded
+        :type string
+        
+        :param sliver_uri: URI of the sliver
+        :type string
+        '''
+        sliver = self.get_by_uri_no_serialized(sliver_uri)
+        sliver.upload_exp_data(open(exp_data_file,'r'))
+        # Force the sliver to use this exp-data file?
+    
+    def upload_exp_data_to_slice(self, exp_data_file, slice_uri):
+        '''
+        Method to upload the experiment data file to the given slice.
+        The experiment data file is used to push the public key of the SFA users
+        to the sliver/slice during the Deploy/Provision phase.
+        
+        :param exp_data_file: path to the local experiment data file being uploaded
+        :type string
+        
+        :param slice_uri: URI of the slice
+        :type string
+        '''
+        slice = self.get_by_uri_no_serialized(slice_uri)
+        slice.upload_exp_data(open(exp_data_file,'r'))
+        # Force the slice to use this exp-data file?    
 
     ##################
     # DELETE METHODS #
