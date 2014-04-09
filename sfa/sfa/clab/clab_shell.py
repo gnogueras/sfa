@@ -44,7 +44,7 @@ class ClabShell:
         self.password = config.SFA_CLAB_PASSWORD 
         self.groupname = config.SFA_CLAB_GROUP
         controller.login(self.username, self.password)
-    
+        self.default_template = config.SFA_CLAB_DEFAULT_TEMPLATE
     
     ###############
     # GET METHODS #
@@ -365,6 +365,42 @@ class ClabShell:
                 raise ResourceNotFound(group_id)
         return group
     
+    def get_template_by(self, template_uri=None, template_name=None, template_id=None):
+        '''
+        Return the template clab-specific dictionary that corresponds to the 
+        given keyword argument (uri, name or id)
+        One of the parameters must be present.
+        
+        :param template_uri: (optional) get template with this uri
+        :type string
+        
+        :param template_name: (optional) get template with this name
+        :type string
+        
+        :param template_id: (optional) get template with this id
+        :type string
+        
+        :returns Template dictionary of the specified template
+        :rtype dict
+        '''
+        if template_uri:
+            template = self.get_by_uri(template_uri)
+        elif template_name:
+            templates = controller.templates.retrieve()
+            template = [template for template in templates if template.name==template_name]
+            if template: 
+                template =template[0].serialize()
+            else: 
+                raise ResourceNotFound(template_name)
+        elif template_id:
+            templates = controller.templates.retrieve()
+            if isinstance(template_id, str): template_id = int(template_id)
+            template = [template for template in templates if template.id==template_id]
+            if template: 
+                template =template[0].serialize()
+            else: 
+                raise ResourceNotFound(template_id)
+        return template
     
     def get_slivers_by_node(self, node=None, node_uri=None):
         '''
@@ -709,7 +745,7 @@ class ClabShell:
         if template_uri: 
             template = self.get_by_uri(template_uri)
         else:
-            template = controller.templates.retrieve()[3]
+            template = self.get_template_by(template_name=self.default_template)
             
         # Create slice
         try:

@@ -37,7 +37,7 @@ class ClabAggregate:
         self.AUTHORITY = driver.AUTHORITY
         self.AUTOMATIC_SLICE_CREATION = driver.AUTOMATIC_SLICE_CREATION
         self.AUTOMATIC_NODE_CREATION = driver.AUTOMATIC_NODE_CREATION
-        self.EXP_DATA_DIR = 'TO_BE_CONFIGURED'
+        self.EXP_DATA_DIR = driver.EXP_DATA_DIR
         
         
     ##################################
@@ -742,7 +742,7 @@ class ClabAggregate:
         import os
         import subprocess
         
-        exp_data_dir='/home/gerard/clab_sfawrap/experiment_data'
+        exp_data_dir='~/clab_sfawrap/experiment_data'
 
         # Directory and file for experiment data
         directory=os.path.join(exp_data_dir, 'temp/etc') 

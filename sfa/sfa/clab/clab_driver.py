@@ -48,15 +48,18 @@ class ClabDriver (Driver):
         print "SFA_CLAB_USER: %s"%(self.config.SFA_CLAB_USER)
         print "SFA_CLAB_PASSWORD: %s"%(self.config.SFA_CLAB_PASSWORD)
         print "SFA_CLAB_GROUP: %s"%(self.config.SFA_CLAB_GROUP)
+        print "SFA_CLAB_URL: %s"%(self.config.SFA_CLAB_URL)
         print "SFA_CLAB_AUTO_SLICE_CREATION: %s"%(self.config.SFA_CLAB_AUTO_SLICE_CREATION)
         print "SFA_CLAB_AUTO_NODE_CREATION: %s"%(self.config.SFA_CLAB_AUTO_NODE_CREATION)
-        print "SFA_CLAB_URL: %s"%(self.config.SFA_CLAB_URL)
+        print "SFA_CLAB_DEFAULT_TEMPLATE: %s"%(self.config.SFA_CLAB_DEFAULT_TEMPLATE)
+        print "SFA_CLAB_TEMP_DIR_EXP_DATA: %s"%(self.config.SFA_CLAB_TEMP_DIR_EXP_DATA)
                
         # Get it from CONFIG
         self.AUTHORITY = ".".join([self.config.SFA_INTERFACE_HRN,self.config.SFA_GENERIC_FLAVOUR])
         self.TESTBEDNAME = self.config.SFA_GENERIC_FLAVOUR
         self.AUTOMATIC_SLICE_CREATION = self.config.SFA_CLAB_AUTO_SLICE_CREATION
         self.AUTOMATIC_NODE_CREATION = self.config.SFA_CLAB_AUTO_NODE_CREATION
+        self.EXP_DATA_DIR = self.config.SFA_CLAB_TEMP_DIR_EXP_DATA
         #self.AUTHORITY = 'confine.clab'
         #self.TESTBEDNAME = 'C-Lab'
         #self.AUTOMATIC_SLICE_CREATION = True
