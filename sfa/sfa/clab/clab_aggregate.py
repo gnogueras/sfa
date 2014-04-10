@@ -787,6 +787,9 @@ mkdir -p /root/.ssh  \n\
         target.close()
         logger.debug("FILE %s created!"%file_path)
         
+        # Permission to execute the file
+        os.chmod(file_path, 0777)
+        
         # Compress the sirectory structure to generate the exp-data file
         compressed_file_name = os.path.join(exp_data_dir, 'exp-data-temp.tgz')
         dir_to_compress = os.path.join(exp_data_dir, 'temp')
