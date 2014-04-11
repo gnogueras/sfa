@@ -81,6 +81,24 @@ class OperationFailed (Exception):
         return repr(self.clab_message)
 
 
+class UnexistingResource (Exception):
+    '''
+    Exception indicating that the resource requested does not exist
+    '''
+    def __init__(self, name, message=None):
+        Exception.__init__(self, message)
+        self.name = name
+
+
+class NotAvailableNodes (Exception):
+    '''
+    Exception indicating that there are no available nodes for the requested slice
+    '''
+    def __init__(self, slice_uri, message=None):
+        Exception.__init__(self, message)
+        self.slice_uri = slice_uri
+
+
 ########################################################################
 
 
@@ -100,16 +118,6 @@ class OperationNotAllowed (Exception):
     def __init__(self, op, message=None):
         Exception.__init__(self, message)
         self.op = op
-
-
-
-class NotAvailableNodes (Exception):
-    '''
-    Exception indicating that there are no available nodes for the requested slice
-    '''
-    def __init__(self, slice_uri, message=None):
-        Exception.__init__(self, message)
-        self.slice_uri = slice_uri
 
 
 

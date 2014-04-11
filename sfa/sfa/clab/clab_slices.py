@@ -14,6 +14,7 @@ from sfa.util.xrn import Xrn, get_leaf, get_authority, urn_to_hrn
 from sfa.clab.clab_xrn import urn_to_uri, urn_to_slicename, get_slice_by_urn, urn_to_nodename
 from sfa.clab.clab_logging import clab_logger
 from sfa.importer.clabimporter import ClabImporter
+from sfa.clab.clab_exceptions import NotAvailableNodes, UnexistingResource
 
 from sfa.trust.hierarchy import Hierarchy
 from sfa.util.config import Config
@@ -76,7 +77,8 @@ class ClabSlices:
             else:
                 # Raise error or return empty dict
                 clab_logger.debug("Verify_Slice in Allocate: Slice did not exists. Creation not allowed!")
-                return {}
+                raise UnexistingResource(slicename, message="The requested slice '%s' does not exist and cannot be created in the testbed"%slicename)
+                #return {}
 
     
     
@@ -156,7 +158,8 @@ class ClabSlices:
                 else:
                     # Return empty dict, raise an exception
                     clab_logger.debug("Verify_Node in Allocate: specified bound node did not exist (%s). Creation not allowed!"%node_element['client_id'])
-                    return {} 
+                    raise UnexistingResource(node_element['client_id'], message="The requested node '%s' does not exist and cannot be created in the testbed"%node_element['client_id']) 
+                    #return {}
                 
         else: 
             # Bound node not specified            
@@ -168,6 +171,7 @@ class ClabSlices:
             else:
                 node = {}
                 clab_logger.debug("Verify_Node in Allocate: node not specified. No available nodes!")
+                raise NotAvailableNodes(slice_uri, message="Not available nodes in the testbed for the slice '%s'"%slice_uri)
             return node
     
 

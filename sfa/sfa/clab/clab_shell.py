@@ -573,6 +573,36 @@ class ClabShell:
         return current_state
     
     
+    def get_sliver_management_ntwk_iface(self, sliver=None, sliver_uri=None):
+        '''
+        Get the information of the management network interface of the sliver
+        that corresponds to the given keyword argument (uri or dict)
+        One of the parameters must be present.
+        
+        :param sliver_uri: (optional) get management network info of the sliver with this uri
+        :type string
+        
+        :param sliver: (optional) get management network info of this sliver dict
+        :type dict
+        
+        :returns management network info of the specified sliver
+        :rtype dict
+        '''
+        # Get sliver
+        if not sliver:
+            sliver = self.get_sliver_by(sliver_uri=sliver_uri)
+        # Get management network address of the sliver
+        mgmt_net_addr="http://[%s]/confine/api/slivers/%s/"%(controller.retrieve(sliver['node']['uri']).mgmt_net.addr, sliver['uri'].partition('slivers/')[2])
+        # Get and return the state
+        # Get dict of the management interface may fail if the sliver is not ready
+        try:
+            management_network_iface = controller.retrieve(mgmt_net_addr).interfaces.get(type='management').__dict__
+        #except controller.ResponseStatusError:
+        except Exception as e:
+            management_network_iface = {'ERROR':'IPv6 of the sliver not yet available. Please try "status" operation later'}
+        return management_network_iface
+    
+    
     def get_available_nodes_for_slice(self, slice_uri):
         '''
         Function that returns the list of available nodes for the given slice.

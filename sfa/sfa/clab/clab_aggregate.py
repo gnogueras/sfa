@@ -431,16 +431,26 @@ class ClabAggregate:
             for sliver_uri in sliver_uris:
                 # Upload the exp-data file to push the public keys of the SFA user
                 self.driver.testbed_shell.upload_exp_data_to_sliver(exp_data_file, sliver_uri)
-                # Set the sliver state to Deploy
+                # Set the sliver state to Deploy 
                 self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
-            
+                # DEBUG
+                sliver = self.driver.testbed_shell.get_sliver_by(sliver_uri=sliver_uri)
+                logger.debug("PROVISION SLIVER: %s"%sliver)
+                management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
+                logger.debug("PROVISION MANAGEMENT NTKW IFACE SLIVER: %s"%management_ntwk_iface)
+                #
+                
             # Update the slice state for the changes in the sliver to have effect
             # Will not affect other slivers since they will have a lower set_state   
             # Get the slice uri of the slivers
             slice_uri = self.driver.testbed_shell.get_sliver_by(sliver_uri=sliver_uris[0])['slice']['uri']
-            # Set slice state to 'deploy'
-            self.driver.testbed_shell.update_slice_state(slice_uri, 'deploy')  
-                
+            # Get slice dict
+            slice = self.driver.testbed_shell.get_slice_by(slice_uri=slice_uri)
+            # Change state of the slice if needed (lower than deploy)
+            if slice['set_state'] == 'register':
+                # Set slice state to 'deploy'
+                self.driver.testbed_shell.update_slice_state(slice_uri, 'deploy')  
+                    
         
         # SLICE
         elif type_of_urn(urns[0])=='slice':
@@ -457,7 +467,12 @@ class ClabAggregate:
                 slivers = self.driver.testbed_shell.get_slivers_by_slice(slice_uri=slice_uri)
                 for sliver in slivers:
                     self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy')
-        
+                    # DEBUG
+                    logger.debug("PROVISION SLIVER: %s"%sliver)
+                    management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
+                    logger.debug("PROVISION MANAGEMENT NTKW IFACE SLIVER: %s"%management_ntwk_iface)
+                    #
+                    
         # Clean the directory structure and files of the exp-data file
         self.clean_exp_data(self.EXP_DATA_DIR)
         
@@ -562,10 +577,25 @@ class ClabAggregate:
             if is_sliver_list:    
                 for uri in uris:
                     self.driver.testbed_shell.update_sliver_state(uri, 'start')
+                
+                # Get slice uri of the sliver
+                slice_uri = self.driver.testbed_shell.get_sliver_by(sliver_uri=uris[0])['slice']['uri']
+                # Get slice dict
+                slice = self.driver.testbed_shell.get_slice_by(slice_uri=slice_uri)
+                # Change state of the slice if needed (lower than deploy)
+                if slice['set_state'] in ['register','deploy']:
+                    # Set slice state to 'deploy'
+                    self.driver.testbed_shell.update_slice_state(slice_uri, 'start')  
+                    
             # SLICE
             else:
                 for uri in uris:
                     self.driver.testbed_shell.update_slice_state(uri, 'start')
+                    # Update the state of all the slivers contained in the slice
+                    # If the set_state of the sliver was lower, the changes in the slice would not affect its slivers 
+                    slivers = self.driver.testbed_shell.get_slivers_by_slice(slice_uri=slice_uri)
+                    for sliver in slivers:
+                        self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'start')
         
         elif action in ['geni_restart', 'restart']:
             # Restart node that contains the slivers
@@ -706,9 +736,13 @@ class ClabAggregate:
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#Shutdown
         
         '''
-
         slice_uri = urn_to_uri(self.driver, slice_urn)
         self.driver.testbed_shell.update_slice_state(slice_uri, 'register')
+        # Update the state of all the slivers contained in the slice
+        # If the set_state of the sliver was lower, the changes in the slice would not affect its slivers 
+        slivers = self.driver.testbed_shell.get_slivers_by_slice(slice_uri=slice_uri)
+        for sliver in slivers:
+            self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'register')
         # Return true indicating success
         return 1
     
@@ -742,8 +776,6 @@ class ClabAggregate:
         import os
         import subprocess
         
-        exp_data_dir='~/clab_sfawrap/experiment_data'
-
         # Directory and file for experiment data
         directory=os.path.join(exp_data_dir, 'temp/etc') 
         file_path =os.path.join(directory, 'rc.local')
@@ -816,8 +848,6 @@ mkdir -p /root/.ssh  \n\
         import os
         import shutil
         
-        exp_data_dir='~/clab_sfawrap/experiment_data'
-
         # Compressed file and directory structure to delete
         compressed_file_name = os.path.join(exp_data_dir, 'exp-data-temp.tgz')
         dir_to_compress = os.path.join(exp_data_dir, 'temp')
