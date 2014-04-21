@@ -200,7 +200,8 @@ def slivername_to_urn (auth, slivername):
     :returns: Sliver's urn.
     :rtype: string
     """
-    return ClabXrn(auth=auth, slivername=slivername).get_urn()
+    escaped_slivername = escape_testbed_obj_names(slivername)
+    return ClabXrn(auth=auth, slivername=escaped_slivername).get_urn()
 
 def urn_to_slivername (urn):
     """

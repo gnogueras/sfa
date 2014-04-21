@@ -126,7 +126,7 @@ class ClabAggregate:
         # Translate to Rspec
         rspec_nodes = []
         for node in nodes:
-            rspec_nodes.append(self.clab_node_to_rspec_node(node))
+            rspec_nodes.append(self.clab_node_to_rspec_node(node, 'advertisement'))
             
         # Function get slices
         #slices = self.get_slices_by_geni_state(state)
@@ -191,7 +191,7 @@ class ClabAggregate:
             # Get slivers of the slice (list of sliver dictionaries)
             slivers=self.driver.testbed_shell.get_slivers_by_slice(slice=slice)
             # Get nodes of the slice (list of nodes dictionary)
-            nodes=self.driver.testbed_shell.get_nodes_by_slice(slice=slice)
+            #nodes=self.driver.testbed_shell.get_nodes_by_slice(slice=slice)
             
         elif(type_of_urn(urns[0])=='sliver'):
             # urns = set of slivers urns in a single slice
@@ -203,19 +203,21 @@ class ClabAggregate:
             for urn in urns:
                 slivers.append(get_sliver_by_urn(self.driver, urn))
             # Get nodes of the slice (list of nodes dictionary)
-            nodes=self.driver.testbed_shell.get_nodes_by_slice(slice=slice)   
+            #nodes=self.driver.testbed_shell.get_nodes_by_slice(slice=slice)   
             
         # Prepare Return struct
         # geni_rpec. Translate nodes to rspec
         rspec_nodes = []
-        for node in nodes:
-            rspec_nodes.append(self.clab_node_to_rspec_node(node))
+        geni_slivers = []
+        for sliver in slivers:
+            rspec_nodes.append(self.clab_sliver_to_rspec_node(sliver, 'manifest'))
+            geni_slivers.append(self.clab_sliver_to_geni_sliver(sliver))
         rspec.version.add_nodes(rspec_nodes)
         
         # geni_slivers. Translate to geni (list of geni sliver dicts)
-        geni_slivers = []
-        for sliver in slivers:
-            geni_slivers.append(self.clab_sliver_to_geni_sliver(sliver))
+        #geni_slivers = []
+        #for sliver in slivers:
+        #    geni_slivers.append(self.clab_sliver_to_geni_sliver(sliver))
         
         return {'geni_urn': geni_urn,
                 'geni_rspec': rspec.toxml(),
@@ -274,6 +276,7 @@ class ClabAggregate:
         nodes_with_slivers = rspec.version.get_nodes_with_slivers()
         # ignore slice attributes...
         requested_attributes = rspec.version.get_slice_attributes()
+        created_slivers = []
         
         # Translate sliver RSpecs to C-Lab slivers
         # Each element node_with_sliver will create a sliver belonging to the slice in the corresponding node
@@ -298,10 +301,35 @@ class ClabAggregate:
             created_sliver = self.driver.testbed_shell.create_sliver(slice['uri'], bound_node['uri'], 
                                                                      interfaces_definition, properties)
             # force 'Register' state to the created sliver
-            self.driver.testbed_shell.update_sliver_state(created_sliver['uri'], 'register')
+            created_sliver = self.driver.testbed_shell.update_sliver_state(created_sliver['uri'], 'register')
+            logger.debug("CREATED SLIVER IN ALLOCATE %s"%created_sliver)
+            # add created sliver to a list of created slivers
+            created_slivers.append(created_sliver)
             
         # prepare return struct 
-        return self.describe([slice_urn], credentials, options)
+        #return self.describe([slice_urn], credentials, options)
+        
+        version_manager = VersionManager()
+        version = version_manager.get_version('GENI 3')        
+        rspec_version = version_manager._get_version(version.type, version.version, 'manifest')
+        rspec = RSpec(version=rspec_version, user_options=options)  
+        
+        # Prepare Return struct
+        rspec_nodes = []
+        geni_slivers = []
+        for sliver in created_slivers:
+            rspec_nodes.append(self.clab_sliver_to_rspec_node(sliver, 'manifest'))
+            geni_sliver = self.clab_sliver_to_geni_sliver(sliver)
+            # Force allocated state (to avoid error in automatic test Allocate)
+            ## geni_sliver['geni_allocation_status'] = 'geni_allocated'
+            #geni_sliver['geni_operational_status'] = 'geni_notready'
+            #geni_slivers.append(geni_sliver)
+            geni_slivers.append(self.clab_sliver_to_geni_sliver(sliver))
+        rspec.version.add_nodes(rspec_nodes)
+        
+        return {'geni_urn': slice_urn,
+                'geni_rspec': rspec.toxml(),
+                'geni_slivers': geni_slivers}
 
     
     def renew(self, urns, expiration_time, credentials={}, options={}):
@@ -428,13 +456,16 @@ class ClabAggregate:
         if type_of_urn(urns[0])=='sliver':    
             # Get sliver_uris of slivers from the urns list
             sliver_uris = [urn_to_uri(self.driver, urn) for urn in urns]
+            slivers = []
             for sliver_uri in sliver_uris:
                 # Upload the exp-data file to push the public keys of the SFA user
                 self.driver.testbed_shell.upload_exp_data_to_sliver(exp_data_file, sliver_uri)
                 # Set the sliver state to Deploy 
-                self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
+                sliver = self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
+                slivers.append(sliver)
                 # DEBUG
-                sliver = self.driver.testbed_shell.get_sliver_by(sliver_uri=sliver_uri)
+                #sliver = self.driver.testbed_shell.get_sliver_by(sliver_uri=sliver_uri)
+                #slivers.append(sliver)
                 logger.debug("PROVISION SLIVER: %s"%sliver)
                 management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
                 logger.debug("PROVISION MANAGEMENT NTKW IFACE SLIVER: %s"%management_ntwk_iface)
@@ -465,22 +496,41 @@ class ClabAggregate:
                 # Update the state of all the slivers contained in the slice
                 # If the set_state of the sliver was lower, the changes in the slice would not affect its slivers 
                 slivers = self.driver.testbed_shell.get_slivers_by_slice(slice_uri=slice_uri)
+                slivers = [self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy') for sliver in slivers]
+                # DEBUG
                 for sliver in slivers:
-                    self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy')
+                    #self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy')
                     # DEBUG
                     logger.debug("PROVISION SLIVER: %s"%sliver)
                     management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
                     logger.debug("PROVISION MANAGEMENT NTKW IFACE SLIVER: %s"%management_ntwk_iface)
                     #
+                #####
                     
         # Clean the directory structure and files of the exp-data file
         self.clean_exp_data(self.EXP_DATA_DIR)
         
         # Prepare and return the struct (use describe function)   
+        #return self.describe(urns, credentials, options)
         version_manager = VersionManager()
-        rspec_version = version_manager.get_version('GENI 3')
-        return self.describe(urns, credentials, options)
-    
+        version = version_manager.get_version('GENI 3')        
+        rspec_version = version_manager._get_version(version.type, version.version, 'manifest')
+        rspec = RSpec(version=rspec_version, user_options=options)  
+        
+        # Prepare Return struct
+        rspec_nodes = []
+        geni_slivers = []
+        for sliver in slivers:
+            rspec_nodes.append(self.clab_sliver_to_rspec_node(sliver, 'manifest_provision'))
+            # Force allocated state (to avoid error in automatic test Allocate)
+            #geni_sliver = self.clab_sliver_to_geni_sliver(sliver)
+            #geni_sliver['geni_allocation_status'] = 'geni_provisioned'
+            #geni_slivers.append(geni_sliver)
+            geni_slivers.append(self.clab_sliver_to_geni_sliver(sliver))
+        rspec.version.add_nodes(rspec_nodes)
+        
+        return {'geni_rspec': rspec.toxml(),
+                'geni_slivers': geni_slivers}
     
     def status (self, urns, credentials={}, options={}):
         '''
@@ -894,13 +944,17 @@ mkdir -p /root/.ssh  \n\
         
         # Get current state of the sliver
         sliver_current_state = self.driver.testbed_shell.get_sliver_current_state(sliver=sliver)
+        
         # Fill geni states
-        geni_allocation_status = self.clab_state_to_geni_state(sliver_current_state, allocation=True)
+        geni_allocation_status = self.clab_state_to_geni_state(sliver['set_state'], allocation=True)
+        #geni_allocation_status = self.clab_state_to_geni_state(sliver_current_state, allocation=True)
         geni_operational_status = self.clab_state_to_geni_state(sliver_current_state, operational=True)
+        logger.debug("CLAB_SLIVER_TO_GENI_SLIVER set_state: %s  - current state: %s - alloc: %s - op: %s"%(sliver['set_state'],sliver_current_state,geni_allocation_status,geni_operational_status))
         
         # Create and fill geni sliver dictionary
         geni_sliver = {'geni_sliver_urn':geni_sliver_urn, 'geni_expires':geni_expires, 
                        'geni_allocation_status':geni_allocation_status, 'geni_operational_status':geni_operational_status}
+        logger.debug("RETURN GENI SLIVER in clab_sl_to_geni_sl: %s"%geni_sliver)
         return geni_sliver 
     
     
@@ -980,7 +1034,7 @@ mkdir -p /root/.ssh  \n\
             if allocation: return 'geni_provisioned'
             elif operational: return 'geni_ready'
             
-        elif clab_state in ['unknown', 'nodata']:
+        elif clab_state in ['unknown', 'nodata', None]:
             if allocation: return 'geni_unallocated'
             elif operational: return 'geni_pending_allocation'
         
@@ -1006,22 +1060,16 @@ mkdir -p /root/.ssh  \n\
             if allocation: return 'geni_unallocated'
             elif operational: return 'geni_failed'
             
-        elif clab_state in 'fail_deploy':
+        elif clab_state == 'fail_deploy':
             # Transitory state that runs the deploy action
             if allocation: return 'geni_allocated'
             elif operational: return 'geni_failed'
             
-        elif clab_state in 'fail_start':
+        elif clab_state == 'fail_start':
             # Transitory state that runs the start action
             if allocation: return 'geni_provisioned'
             elif operational: return 'geni_failed'
  
-    
-    #def get_slivers_by_geni_state(self, state=None):
-        #'''
-        #???
-        #'''
-        #pass
     
         
     def get_nodes_by_geni_state(self, state=None):
@@ -1036,8 +1084,8 @@ mkdir -p /root/.ssh  \n\
         :rtype list of dict
         '''
         nodes = self.driver.testbed_shell.get_nodes()
-        if state and state=='available':
-            nodes = [node for node in nodes if self.driver.testbed_shell.get_node_current_state(node=node)=='production']
+        #if state and state=='available':
+        #    nodes = [node for node in nodes if self.driver.testbed_shell.get_node_current_state(node=node)=='production']
         return nodes
         
             
@@ -1064,7 +1112,7 @@ mkdir -p /root/.ssh  \n\
     # RSPEC related and translation methods
     ########################################
     
-    def clab_node_to_rspec_node(self, node, options={}):
+    def clab_node_to_rspec_node(self, node, rspec_type, sliver={}, options={}):
         '''
         Translate the CLab-specific node dictionary to the standard Rspec format.
         The Rspec format used is v3 and it is augmented with specific fields from CLab.
@@ -1082,26 +1130,141 @@ mkdir -p /root/.ssh  \n\
         if isinstance(node, str):
             node = self.driver.testbed_shell.get_node_by(node_uri=node)
             
-        #rspec_node = ClabNode()
         rspec_node = NodeElement()
         
-        # RSpec standard fields (Advertisement RSpec)
-        rspec_node['client_id'] = node['name'] # 'MyNode'
-        rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-        rspec_node['component_name'] = node['name'] # pc160  
+        # RSpec standard fields of the Node element
         rspec_node['component_manager_id'] = hrn_to_urn(self.AUTHORITY, 'authority+cm') # urn:publicid:IDN+confine:clab+authority+cm
-        rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
         rspec_node['exclusive'] = 'false'
-        rspec_node['available'] = self.clab_node_is_geni_available(self.driver.testbed_shell.get_node_current_state(node=node))
-        rspec_node['boot_state'] = self.clab_state_to_geni_state(self.driver.testbed_shell.get_node_current_state(node=node))
-        rspec_node['hardware_types'] = [HardwareType({'name': node['arch']})]
+
+        if rspec_type == 'request':
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node['name'] # 'MyNode'
+            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
+            rspec_node['sliver_id'] = "URN OF THE SLIVER"
+            
+        elif rspec_type == 'advertisement':
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
+            node_current_state = self.driver.testbed_shell.get_node_current_state(node=node)
+            rspec_node['available'] = self.clab_node_is_geni_available(node_current_state)
+            rspec_node['boot_state'] = self.clab_state_to_geni_state(node_current_state)
+            rspec_node['hardware_types'] = [HardwareType({'name': node['arch']})]
+            # Add INTERFACES
+            rspec_node['interfaces'] = self.clab_node_interfaces_to_rspec_interfaces(node)
+            
+        elif rspec_type == 'manifest':
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node['name'] # 'MyNode'
+            rspec_node['sliver_id'] = "URN OF THE SLIVER"
+            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
+            # Add SLIVERS
+            rspec_node['slivers'] = self.clab_slivers_to_rspec_slivers(node)
+            # Add SERVICES and LOGIN information
+            rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':'sliver_ipv6', 'port':'22', 'username':'root'}}]
+            
+
+        # Rspec CLab-specific fields
+        # 'uri','id','name','description','arch','boot_sn','set_state','group','direct_ifaces','properties','cert','slivers',
+        #            'local_iface','sliver_pub_ipv6','sliver_pub_ipv4','sliver_pub_ipv4_range','mgmt_net','sliver_mac_prefix','priv_ipv4_prefix'
+        # 'current_state'
+        #rspec_node['uri'] = node['uri']
+        #rspec_node['id'] = node['id']
+        #rspec_node['name'] = node['name']
+        #rspec_node['description'] = node['description']
+        #rspec_node['arch'] = node['arch']
+        #rspec_node['boot_sn'] = node['boot_sn']
+        #rspec_node['set_state'] = node['set_state']
+        #rspec_node['current_state'] = self.driver.testbed_shell.get_node_current_state(node=node)
+        #rspec_node['group'] = node['group']
+        #rspec_node['direct_ifaces'] = node['direct_ifaces']
+        #rspec_node['properties'] = node['properties']
+        #rspec_node['cert'] = node['cert']
+        #rspec_node['slivers'] = node['slivers']
+        #rspec_node['local_iface'] = node['local_iface']
+        #rspec_node['sliver_pub_ipv6'] = node['sliver_pub_ipv6']
+        #rspec_node['sliver_pub_ipv4'] = node['sliver_pub_ipv4']
+        #rspec_node['sliver_pub_ipv4_range'] = node['sliver_pub_ipv4_range']
+        #rspec_node['mgmt_net'] = node['mgmt_net']
+        #rspec_node['sliver_mac_prefix'] = node['sliver_mac_prefix']
+        #rspec_node['priv_ipv4_prefix'] = node['priv_ipv4_prefix']
+            
+        return rspec_node
+    
+    
+    
+    def clab_sliver_to_rspec_node(self, sliver, rspec_type, options={}):
+        '''
+        Translate the CLab-specific sliver dictionary to the standard Rspec format of node element.
+        The Rspec format used is v3 and it is augmented with specific fields from CLab.
         
-        # Add INTERFACES
-        rspec_node['interfaces'] = self.clab_node_interfaces_to_rspec_interfaces(node)
+        :param node: C-Lab specific Sliver dict OR uri of sliver 
+        :type dict OR string
         
-        # Add SLIVERS
-        rspec_node['slivers'] = self.clab_slivers_to_rspec_slivers(node)
+        :param options: various options
+        :type dict
         
+        :returns list of dictionaries containing the RSpec of the nodes
+        :rtype list
+        '''    
+        # If the argument is the node uri, obtain node dict
+        if isinstance(sliver, str):
+            sliver = self.driver.testbed_shell.get_sliver_by(sliver_uri=sliver)
+        node = self.driver.testbed_shell.get_node_by(node_uri=sliver['node']['uri'])
+        rspec_node = NodeElement()
+        
+        # RSpec standard fields of the Node element
+        rspec_node['component_manager_id'] = hrn_to_urn(self.AUTHORITY, 'authority+cm') # urn:publicid:IDN+confine:clab+authority+cm
+        rspec_node['exclusive'] = 'false'
+
+        if rspec_type == 'request':
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node['name'] # 'MyNode'
+            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
+            rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
+            
+        elif rspec_type == 'advertisement':
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
+            node_current_state = self.driver.testbed_shell.get_node_current_state(node=node)
+            rspec_node['available'] = self.clab_node_is_geni_available(node_current_state)
+            rspec_node['boot_state'] = self.clab_state_to_geni_state(node_current_state)
+            rspec_node['hardware_types'] = [HardwareType({'name': node['arch']})]
+            # Add INTERFACES
+            rspec_node['interfaces'] = self.clab_node_interfaces_to_rspec_interfaces(node)
+        
+        elif rspec_type == 'manifest':
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node['name'] # 'MyNode'
+            rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
+            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
+            # Add SLIVERS
+            rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
+            # Add SERVICES and LOGIN information
+            #management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
+            #rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':management_ntwk_iface['ipv6_addr'], 'port':'22', 'username':'root'}}]
+            
+        elif rspec_type == 'manifest_provision':
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node['name'] # 'MyNode'
+            rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
+            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
+            # Add SLIVERS
+            rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
+            # Add SERVICES and LOGIN information
+            #management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
+            #rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':management_ntwk_iface['ipv6_addr'], 'port':'22', 'username':'root'}}]
+            # Calculate the IPv6 address of the sliver
+            ipv6_sliver_addr = self.driver.testbed_shell.get_ipv6_sliver_address(sliver=sliver)
+            rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':ipv6_sliver_addr, 'port':'22', 'username':'root'}}]
+            
+
         # Rspec CLab-specific fields
         # 'uri','id','name','description','arch','boot_sn','set_state','group','direct_ifaces','properties','cert','slivers',
         #            'local_iface','sliver_pub_ipv6','sliver_pub_ipv4','sliver_pub_ipv4_range','mgmt_net','sliver_mac_prefix','priv_ipv4_prefix'
@@ -1184,6 +1347,29 @@ mkdir -p /root/.ssh  \n\
             rspec_iface = dict([('interface_id', interface['nr']), ('role', interface['type']), ('client_id', client_id)])
             rspec_interfaces.append(rspec_iface)
         return rspec_interfaces
+    
+    
+
+    def clab_sliver_to_rspec_sliver(self, sliver, options={}):
+        '''
+        Translate a list of CLab-specific slivers dictionaries of a Node 
+        to a list of standard Rspec slivers.
+        
+        :param node: C-Lab specific dictionary of Node
+        :type dict
+        
+        :param options: various options
+        :type dict
+         
+        :returns list of dictionaries containing the RSpec of the slivers 
+        :rtype list
+        '''
+        disk_image = self.clab_template_to_rspec_disk_image(sliver)
+        rspec_sliver = dict([('sliver_id', sliver['id']), ('client_id', sliver['id']), 
+                            ('name', sliver['id']), ('type', 'RD_Sliver'), ('disk_image', disk_image)])
+        return rspec_sliver 
+    
+    
     
     
     def clab_slivers_to_rspec_slivers(self, node, options={}):

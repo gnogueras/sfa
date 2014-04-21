@@ -602,6 +602,40 @@ class ClabShell:
             management_network_iface = {'ERROR':'IPv6 of the sliver not yet available. Please try "status" operation later'}
         return management_network_iface
     
+    def get_ipv6_sliver_address(self, sliver=None, sliver_uri=None):
+        '''
+        Get the ipv6 address of the sliver in the management network 
+        The sliver is identified by the sliver arguments (uri or dict)
+        To calculate the ipv6 address of the sliver it is necessary to know the ipv6 of the
+        node that hosts the sliver.
+        The node is identified by the node arguments (uri or dict)
+        One of the parameters must be present for node and for sliver.
+        
+        :param node: (optional) node dict of the node hosting the sliver
+        :type string
+        
+        :param node_uri: (optional) node uri of the node hosting the sliver
+        :type string
+        
+        :param sliver: (optional) sliver dict of the sliver whose ipv6 address is being got
+        :type dict
+        
+        :param sliver_uri: (optional) sliver uri of the sliver whose ipv6 address is being got
+        :type string
+        
+        :returns ipv6 address of the sliver in the management network
+        :rtype string
+        '''
+        # Get sliver
+        if not sliver:
+            sliver = self.get_sliver_by(sliver_uri=sliver_uri)
+        slice_id = int(sliver['id'].split('@')[0])
+        slice_id_hex = hex(slice_id).split('x')[1]
+        node_ipv6_addr = controller.retrieve(sliver['node']['uri']).mgmt_net.addr
+        parts = node_ipv6_addr.split(':')
+        sliver_ipv6_addr = ':'.join([parts[0],parts[1],parts[2],parts[3],'1001','0','0',slice_id_hex])
+        return sliver_ipv6_addr
+    
     
     def get_available_nodes_for_slice(self, slice_uri):
         '''
@@ -974,7 +1008,7 @@ class ClabShell:
             sliver.save()
         except controller.ResponseStatusError as e:
             raise OperationFailed('update sliver state', e.message)
-        return True
+        return sliver.serialize()
     
     
     def update_node(self, node_uri, fields):
