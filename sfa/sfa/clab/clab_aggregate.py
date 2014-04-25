@@ -68,7 +68,7 @@ class ClabAggregate:
         # struct value
         value = dict()
         value['geni_api'] = int(version_manager.get_version('GENI 3').version)
-        value['geni_api_versions'] = dict([(version_manager.get_version('GENI 3').version, "This server's AM API absolute URL")])
+        value['geni_api_versions'] = dict([(version_manager.get_version('GENI 3').version, "https://147.83.35.237:12346")])
         value['geni_request_rspec_versions'] = [version.to_dict() for version in version_manager.versions if (version.content_type in ['*', 'request'] and version.type=='GENI')]
         value['geni_ad_rspec_versions'] = [version.to_dict() for version in version_manager.versions if (version.content_type in ['*', 'ad'] and version.type=='GENI')]
         value['geni_credential_types'] = [{'geni_type': 'geni_sfa', 'geni_version' : '3'}] ##???????????????????????????? CHECK
