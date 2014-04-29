@@ -625,15 +625,22 @@ class ClabShell:
         
         :returns ipv6 address of the sliver in the management network
         :rtype string
+        
+        NOTE:  X:Y:Z:N:10ii:ssss:ssss:ssss   with 0xii id of management network interface of sliver in hexadecimal
+                                                  0xS id of slice in hexadecimal
         '''
         # Get sliver
         if not sliver:
             sliver = self.get_sliver_by(sliver_uri=sliver_uri)
         slice_id = int(sliver['id'].split('@')[0])
-        slice_id_hex = hex(slice_id).split('x')[1]
+        slice_id_hex = "{:012x}".format(slice_id)
+        # slice_id_hex = hex(slice_id).split('x')[1]
+        mgmt_iface = [iface for iface in sliver['interfaces'] if iface['type']=='management'][0]
+        mgmt_iface_id_hex = "10{:02x}".format(mgmt_iface['nr']) # modified with prefix 10 (0x10ii)
         node_ipv6_addr = controller.retrieve(sliver['node']['uri']).mgmt_net.addr
         parts = node_ipv6_addr.split(':')
-        sliver_ipv6_addr = ':'.join([parts[0],parts[1],parts[2],parts[3],'1001','0','0',slice_id_hex])
+        # sliver_ipv6_addr = ':'.join([parts[0],parts[1],parts[2],parts[3],'1001','0','0',slice_id_hex])
+        sliver_ipv6_addr = ':'.join([parts[0],parts[1],parts[2],parts[3],mgmt_iface_id_hex,slice_id_hex[:4],slice_id_hex[4:][:4],slice_id_hex[8:]])
         return sliver_ipv6_addr
     
     
