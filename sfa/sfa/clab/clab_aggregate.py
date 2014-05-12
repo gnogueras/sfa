@@ -370,8 +370,8 @@ class ClabAggregate:
         
         '''
         # Get geni_best_effort option
-        geni_best_effort = options.get('geni_best_effort', 'true').lower()
-        
+        geni_best_effort = options.get('geni_best_effort', True)
+
         # Check that urn argument is a list (not a string)
         if isinstance(urns, str): urns = [urns]
         
@@ -447,7 +447,7 @@ class ClabAggregate:
         
         
         # Get geni_best_effort option
-        geni_best_effort = options.get('geni_best_effort', 'true').lower()
+        geni_best_effort = options.get('geni_best_effort', True)
         
         # Check that urn argument is a list (not a string)
         if isinstance(urns, str): urns = [urns]
@@ -609,7 +609,7 @@ class ClabAggregate:
         
         '''
         # Get geni_best_effort option
-        geni_best_effort = options.get('geni_best_effort', 'true').lower()
+        geni_best_effort = options.get('geni_best_effort', True)
         
         # Check that urn argument is a list (not a string)
         if isinstance(urns, str): urns = [urns]
@@ -643,7 +643,7 @@ class ClabAggregate:
                     self.driver.testbed_shell.update_slice_state(uri, 'start')
                     # Update the state of all the slivers contained in the slice
                     # If the set_state of the sliver was lower, the changes in the slice would not affect its slivers 
-                    slivers = self.driver.testbed_shell.get_slivers_by_slice(slice_uri=slice_uri)
+                    slivers = self.driver.testbed_shell.get_slivers_by_slice(slice_uri=uri)
                     for sliver in slivers:
                         self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'start')
         
@@ -723,7 +723,7 @@ class ClabAggregate:
         
         '''
         # Get geni_best_effort option
-        geni_best_effort = options.get('geni_best_effort', 'true').lower()
+        geni_best_effort = options.get('geni_best_effort', True)
         
         # Return list
         deleted_slivers = []

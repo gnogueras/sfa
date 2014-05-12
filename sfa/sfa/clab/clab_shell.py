@@ -117,15 +117,10 @@ class ClabShell:
         :rtype list 
         '''
         # Get list of dicts (nodes)
-        all_nodes = controller.nodes.retrieve().serialize()
-        nodes=[]
-        nodes.extend(all_nodes)
-        for node in all_nodes:
-            for key in filters:
-                if key not in node or node[key]!=filters[key]:
-                    nodes.remove(node)
-                    break
-        return nodes
+        #filtered_nodes = controller.nodes.retrieve()
+        #for key in filters:
+        #    exec("filtered_nodes = filtered_nodes.filter("+key+"='"+filters[key]+"')")
+        return controller.nodes.retrieve().filter(**filters).serialize()
     
     def get_slices(self, filters={}):
         '''
@@ -142,15 +137,10 @@ class ClabShell:
         :rtype list 
         '''
         # Get list of dicts (slices)
-        all_slices = controller.slices.retrieve().serialize()
-        slices=[]
-        slices.extend(all_slices)
-        for slice in all_slices:
-            for key in filters:
-                if key not in slice or slice[key]!=filters[key]: 
-                    slices.remove(slice)
-                    break
-        return slices
+        #filtered_slices = controller.slices.retrieve()
+        #for key in filters:
+        #    exec("filtered_slices = filtered_slices.filter("+key+"='"+filters[key]+"')")
+        return controller.slices.retrieve().filter(**filters).serialize()        
     
     
     def get_slivers(self, filters={}):
@@ -169,23 +159,20 @@ class ClabShell:
         :rtype list 
         '''
         # Get list of dicts (slivers)
-        all_slivers=controller.slivers.retrieve().serialize()
-        slivers=[]
-        slivers.extend(all_slivers)
-        for sliver in all_slivers:
-            for key in filters:
-                if key in ['node_uri', 'slice_uri']:
-                    if key == 'node_uri' and sliver['node']['uri']!=filters[key]: 
-                        slivers.remove(sliver)
-                        break
-                    elif key == 'slice_uri' and sliver['slice']['uri']!=filters[key]: 
-                        slivers.remove(sliver)
-                        break
-                else:
-                    if key in sliver and sliver[key]==filters[key]: 
-                        slivers.append(sliver)
-                        break                
-        return slivers
+        filtered_slivers = controller.slivers.retrieve()
+        
+        for key in filters:
+            if key == 'node_uri':
+                node_filter = Resource(uri=filters.pop("node_uri"))
+                filtered_slivers = filtered_slivers.filter(node=node_filter)
+            if key == 'slice_uri':
+                slice_filter = Resource(uri=filters.pop("slice_uri"))
+                filtered_slivers = filtered_slivers.filter(slice=slice_filter)
+            else:
+                #exec("filtered_slivers = filtered_slivers.filter("+key+"='"+filters[key]+"')")
+                filtered_slivers = filtered_slivers.filter(**filters)
+        return filtered_slivers.serialize()
+      
     
     
     def get_users(self, filters={}):
@@ -202,15 +189,10 @@ class ClabShell:
         :rtype list 
         '''
         # Get list of dicts (users)
-        all_users = controller.users.retrieve().serialize()
-        users=[]
-        users.extend(all_users)
-        for user in all_users:
-            for key in filters:
-                if key not in user or user[key]!=filters[key]: 
-                    users.remove(user)
-                    break
-        return users
+        #filtered_users = controller.users.retrieve()
+        #for key in filters:
+        #    exec("filtered_users = filtered_users.filter("+key+"='"+filters[key]+"')")
+        return controller.users.retrieve().filter(**filters).serialize()
     
     
     def get_node_by(self, node_uri=None, node_name=None, node_id=None):
@@ -231,25 +213,17 @@ class ClabShell:
         :returns Node dictionary of the specified node
         :rtype dict
         '''
-        from sfa.clab.clab_logging import clab_logger
-        clab_logger.debug("CLAB_SHELL:GET NODE BY  node_uri=%s, node_name=%s, node_id=%s"%(node_uri, node_name, node_id))
-        if node_uri:
-            node = self.get_by_uri(node_uri)
-        elif node_name:
-            nodes = controller.nodes.retrieve()
-            node = [node for node in nodes if node.name==node_name]
-            if node: 
-                node =node[0].serialize()
-            else: 
-                raise ResourceNotFound(node_name)
-        elif node_id:
-            nodes = controller.nodes.retrieve()
-            if isinstance(node_id, str): node_id = int(node_id)
-            node = [node for node in nodes if node.id==node_id]
-            if node: 
-                node =node[0].serialize()
-            else: 
-                raise ResourceNotFound(node_id)
+        #from sfa.clab.clab_logging import clab_logger
+        #clab_logger.debug("CLAB_SHELL:GET NODE BY  node_uri=%s, node_name=%s, node_id=%s"%(node_uri, node_name, node_id))
+        try:
+            if node_uri:
+                node = self.get_by_uri(node_uri)
+            elif node_name:
+                node = controller.nodes.retrieve().get(name=node_name).serialize()
+            elif node_id:
+                node = controller.nodes.retrieve().get(id=node_id).serialize()
+        except TypeError:
+            raise ResourceNotFound("node_id=%s, node_name=%s, node_uri=%s"%(node_id,node_name,node_uri))
         return node
     
     
@@ -271,25 +245,18 @@ class ClabShell:
         :returns Slice dictionary of the specified slice
         :rtype dict
         '''
-        if slice_uri:
-            slice = self.get_by_uri(slice_uri)
-        elif slice_name:
-            slices = controller.slices.retrieve()
-            slice = [slice for slice in slices if slice.name==slice_name]
-            if slice: 
-                slice =slice[0].serialize()
-            else: 
-                raise ResourceNotFound(slice_name)
-        elif slice_id:
-            slices = controller.slices.retrieve()
-            if isinstance(slice_id, str): slice_id = int(slice_id)
-            slice = [slice for slice in slices if slice.id==slice_id]
-            if slice: 
-                slice =slice[0].serialize()
-            else: 
-                raise ResourceNotFound(slice_id)
+        try:
+            if slice_uri:
+                slice = self.get_by_uri(slice_uri)
+            elif slice_name:
+                slice = controller.slices.retrieve().get(name=slice_name).serialize()
+            elif slice_id:
+                slice = controller.slices.retrieve().get(id=slice_id).serialize()
+        except TypeError:
+            raise ResourceNotFound("slice_id=%s, slice_name=%s, slice_uri=%s"%(slice_id,slice_name,slice_uri))
         return slice
     
+        
     
     def get_sliver_by(self, sliver_uri=None, sliver_name=None, sliver_id=None):
         '''
@@ -309,22 +276,15 @@ class ClabShell:
         :returns Sliver dictionary of the specified sliver
         :rtype dict
         '''
-        if sliver_uri:
-            sliver = self.get_by_uri(sliver_uri)
-        elif sliver_name:
-            slivers = controller.slivers.retrieve()
-            sliver = [sliver for sliver in slivers if sliver.id==sliver_name]
-            if sliver: 
-                sliver =sliver[0].serialize()
-            else: 
-                raise ResourceNotFound(sliver_name)
-        elif sliver_id:
-            slivers = controller.slivers.retrieve()
-            sliver = [sliver for sliver in slivers if sliver.id==sliver_id]
-            if sliver: 
-                sliver =sliver[0].serialize()
-            else: 
-                raise ResourceNotFound(sliver_id)
+        try:
+            if sliver_uri:
+                sliver = self.get_by_uri(sliver_uri)
+            elif sliver_name:
+                sliver = controller.slivers.retrieve().get(name=sliver_name).serialize()
+            elif sliver_id:
+                sliver = controller.slivers.retrieve().get(id=sliver_id).serialize()
+        except TypeError:
+            raise ResourceNotFound("sliver_id=%s, sliver_name=%s, sliver_uri=%s"%(sliver_id,sliver_name,sliver_uri))
         return sliver
     
     
@@ -346,23 +306,15 @@ class ClabShell:
         :returns Group dictionary of the specified group
         :rtype dict
         '''
-        if group_uri:
-            group = self.get_by_uri(group_uri)
-        elif group_name:
-            groups = controller.groups.retrieve()
-            group = [group for group in groups if group.name==group_name]
-            if group: 
-                group =group[0].serialize()
-            else: 
-                raise ResourceNotFound(group_name)
-        elif group_id:
-            groups = controller.groups.retrieve()
-            if isinstance(group_id, str): group_id = int(group_id)
-            group = [group for group in groups if group.id==group_id]
-            if group: 
-                group =group[0].serialize()
-            else: 
-                raise ResourceNotFound(group_id)
+        try:
+            if group_uri:
+                group = self.get_by_uri(group_uri)
+            elif group_name:
+                group = controller.groups.retrieve().get(name=group_name).serialize()
+            elif group_id:
+                group = controller.groups.retrieve().get(id=group_id).serialize()
+        except TypeError:
+            raise ResourceNotFound("group_id=%s, group_name=%s, group_uri=%s"%(group_id,group_name,group_uri))
         return group
     
     def get_template_by(self, template_uri=None, template_name=None, template_id=None):
@@ -383,23 +335,15 @@ class ClabShell:
         :returns Template dictionary of the specified template
         :rtype dict
         '''
-        if template_uri:
-            template = self.get_by_uri(template_uri)
-        elif template_name:
-            templates = controller.templates.retrieve()
-            template = [template for template in templates if template.name==template_name]
-            if template: 
-                template =template[0].serialize()
-            else: 
-                raise ResourceNotFound(template_name)
-        elif template_id:
-            templates = controller.templates.retrieve()
-            if isinstance(template_id, str): template_id = int(template_id)
-            template = [template for template in templates if template.id==template_id]
-            if template: 
-                template =template[0].serialize()
-            else: 
-                raise ResourceNotFound(template_id)
+        try:
+            if template_uri:
+                template = self.get_by_uri(template_uri)
+            elif template_name:
+                template = controller.templates.retrieve().get(name=template_name).serialize()
+            elif template_id:
+                template = controller.templates.retrieve().get(id=template_id).serialize()
+        except TypeError:
+            raise ResourceNotFound("template_id=%s, template_name=%s, template_uri=%s"%(template_id,template_name,template_uri))
         return template
     
     def get_slivers_by_node(self, node=None, node_uri=None):
@@ -663,12 +607,13 @@ class ClabShell:
         # Get available nodes (nodes in all_nodes and not in nodes_of_slice)
         # avialable_nodes is a list of dictionaries
         available_nodes = [node for node in all_nodes if node not in nodes_of_slice]
+        
         # Get available nodes in production state
-        available_production_nodes=[]
-        for available_node in available_nodes:
-            if self.get_node_current_state(node=available_node) == 'production':
-                available_production_nodes.append(available_node)
-        return available_production_nodes
+        #available_production_nodes=[]
+        #for available_node in available_nodes:
+        #    if self.get_node_current_state(node=available_node) == 'production':
+        #        available_production_nodes.append(available_node)
+        return available_nodes
     
     
     def get_sliver_numeric_id(self, sliver=None, sliver_uri=None, sliver_name=None):

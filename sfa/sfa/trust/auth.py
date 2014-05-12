@@ -275,6 +275,7 @@ class Auth:
         @param name human readable name to test  
         """
         object_hrn = self.object_gid.get_hrn()
+        logger.debug("VERIFY OBJECT PERMISSION. \n\n object_hrn: %s \n name: %s \n get_authority(name): %s"%(object_hrn, name, get_authority(name)))
         if object_hrn == name:
             return
         if name.startswith(object_hrn + "."):

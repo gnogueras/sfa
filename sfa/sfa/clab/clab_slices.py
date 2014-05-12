@@ -163,15 +163,26 @@ class ClabSlices:
                 
         else: 
             # Bound node not specified            
-            available_production_nodes = self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri)
-            if available_production_nodes:
-                randomly_selected = random.randint(0, len(available_production_nodes)-1)
-                node = available_production_nodes[randomly_selected]
-                clab_logger.debug("Verify_Node in Allocate: node not specified. Randomly select available node %s"%node['name'])
-            else:
-                node = {}
-                clab_logger.debug("Verify_Node in Allocate: node not specified. No available nodes!")
-                raise NotAvailableNodes(slice_uri, message="Not available nodes in the testbed for the slice '%s'"%slice_uri)
+            available_nodes = self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri)
+            
+            
+            randomly_selected = random.randint(0, len(available_nodes)-1)
+            node = available_nodes[randomly_selected]
+            
+            while self.driver.testbed_shell.get_node_current_state(node_uri=node['uri'])!='production':
+                randomly_selected = random.randint(0, len(available_nodes)-1)
+                node = available_nodes[randomly_selected]
+            
+            clab_logger.debug("Verify_Node in Allocate: node not specified. Randomly select available node %s"%node['name'])
+            
+            #if available_production_nodes:
+            #    randomly_selected = random.randint(0, len(available_production_nodes)-1)
+            #    node = available_production_nodes[randomly_selected]
+            #    clab_logger.debug("Verify_Node in Allocate: node not specified. Randomly select available node %s"%node['name'])
+            #else:
+            #    node = {}
+            #    clab_logger.debug("Verify_Node in Allocate: node not specified. No available nodes!")
+            #    raise NotAvailableNodes(slice_uri, message="Not available nodes in the testbed for the slice '%s'"%slice_uri)
             return node
     
 
