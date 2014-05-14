@@ -65,7 +65,7 @@ class Auth:
             creds = [creds]
         logger.debug("Auth.checkCredentials with %d creds on hrns=%s"%(len(creds),hrns))
         # won't work if either creds or hrns is empty - let's make it more explicit
-        if not creds: raise Forbidden("no credential provided")
+        if not creds: raise BadArgs("no credential provided")  #Forbidden("no credential provided")
         if not hrns: hrns = [None]
         for cred in creds:
             for hrn in hrns:

@@ -6,6 +6,7 @@ Created on 06/02/2014
 
 
 from sfa.util.xrn import Xrn
+import unicodedata
 
 '''
 Methods and classes for XRN management in C-Lab
@@ -322,6 +323,20 @@ def escape_testbed_obj_names(object_name):
     
     return escaped_name
     
+    
+def unicode_normalize(name):
+    """
+    Converts the Unicode string 'name' to a ASCII string, ignoring the special non-ascii characters
+    The XRN generic management is performed by ASCII codec, so the strings must only contain valid
+    ASCII characters
+    
+    :param name: unicode string that may contain non-ascii characters
+    :type string.
+
+    :returns: ascii encoded string
+    :rtype: string
+    """
+    return unicodedata.normalize('NFKD', name).encode('ascii','ignore')
 
 ###########################################
 # Special translation methods using driver

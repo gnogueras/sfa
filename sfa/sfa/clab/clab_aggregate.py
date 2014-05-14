@@ -16,15 +16,17 @@ from sfa.util.sfalogging import logger
 from sfa.util.sfatime import utcparse, datetime_to_string
 from sfa.util.xrn import Xrn, hrn_to_urn, urn_to_hrn
 from sfa.rspecs.elements.node import NodeElement
+from sfa.util.faults import SearchFailed
 
 import datetime
 
 # local imports from the Project
 #from rspecs.elements.versions.clabNode import ClabNode
 from sfa.clab.clab_xrn import type_of_urn, urn_to_slicename, slicename_to_urn,\
-    hostname_to_urn, urn_to_nodename, urn_to_slivername, slivername_to_urn
+    hostname_to_urn, urn_to_nodename, urn_to_slivername, slivername_to_urn, unicode_normalize
 from sfa.clab.clab_xrn import urn_to_uri, get_node_by_urn, get_slice_by_urn, get_sliver_by_urn, get_slice_by_sliver_urn
 from sfa.clab.clab_slices import ClabSlices
+from sfa.clab.clab_exceptions import ResourceNotFound
 
 class ClabAggregate:
     """
@@ -131,7 +133,7 @@ class ClabAggregate:
         # Function get slices
         #slices = self.get_slices_by_geni_state(state)
 
-        rspec.version.add_nodes(rspec_nodes)        
+        rspec.version.add_nodes(rspec_nodes)       
         return rspec.toxml()
     
     
@@ -180,31 +182,37 @@ class ClabAggregate:
         
         # Check that urn argument is a list (not a string)
         if isinstance(urns, str): urns = [urns] 
-        
+
         if(type_of_urn(urns[0])=='slice'):
-            # urns = single slice urn 
-            # First urn belongs to slice. Other urns of the list will be ignored
-            # There should be just one urn if the type is slice
-            geni_urn=urns[0]
-            # Get dictionary slice from urn
-            slice=get_slice_by_urn(self.driver, geni_urn)
-            # Get slivers of the slice (list of sliver dictionaries)
-            slivers=self.driver.testbed_shell.get_slivers_by_slice(slice=slice)
-            # Get nodes of the slice (list of nodes dictionary)
-            #nodes=self.driver.testbed_shell.get_nodes_by_slice(slice=slice)
-            
+            try:
+                # urns = single slice urn 
+                # First urn belongs to slice. Other urns of the list will be ignored
+                # There should be just one urn if the type is slice
+                geni_urn=urns[0]
+                # Get dictionary slice from urn
+                slice=get_slice_by_urn(self.driver, geni_urn)
+                # Get slivers of the slice (list of sliver dictionaries)
+                slivers=self.driver.testbed_shell.get_slivers_by_slice(slice=slice)
+                # Get nodes of the slice (list of nodes dictionary)
+                #nodes=self.driver.testbed_shell.get_nodes_by_slice(slice=slice)
+            except ResourceNotFound:
+                slivers = []
+                
         elif(type_of_urn(urns[0])=='sliver'):
-            # urns = set of slivers urns in a single slice
-            # Get the slice from one of the urn-sliver (dictionary slice)
-            slice=get_slice_by_sliver_urn(self.driver, urns[0])
-            geni_urn=slicename_to_urn(self.AUTHORITY, slice['name'])
-            # Get slivers from the urns list (list of slivers dictionary)
-            slivers=[]
-            for urn in urns:
-                slivers.append(get_sliver_by_urn(self.driver, urn))
-            # Get nodes of the slice (list of nodes dictionary)
-            #nodes=self.driver.testbed_shell.get_nodes_by_slice(slice=slice)   
-            
+            try:
+                # urns = set of slivers urns in a single slice
+                # Get the slice from one of the urn-sliver (dictionary slice)
+                slice=get_slice_by_sliver_urn(self.driver, urns[0])
+                geni_urn=slicename_to_urn(self.AUTHORITY, slice['name'])
+                # Get slivers from the urns list (list of slivers dictionary)
+                slivers=[]
+                for urn in urns:
+                    slivers.append(get_sliver_by_urn(self.driver, urn))
+                # Get nodes of the slice (list of nodes dictionary)
+                #nodes=self.driver.testbed_shell.get_nodes_by_slice(slice=slice)   
+            except ResourceNotFound:
+                raise SearchFailed(urn[0])
+                
         # Prepare Return struct
         # geni_rpec. Translate nodes to rspec
         rspec_nodes = []
@@ -1135,17 +1143,20 @@ mkdir -p /root/.ssh  \n\
         # RSpec standard fields of the Node element
         rspec_node['component_manager_id'] = hrn_to_urn(self.AUTHORITY, 'authority+cm') # urn:publicid:IDN+confine:clab+authority+cm
         rspec_node['exclusive'] = 'false'
+        
+        # Unicode normalize node name in case it contains special characters (no ascii chrarcters)
+        node_name = unicode_normalize(node['name'])
 
         if rspec_type == 'request':
-            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-            rspec_node['client_id'] = node['name'] # 'MyNode'
-            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node_name # 'MyNode'
+            rspec_node['component_name'] = node_name # pc160  
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             rspec_node['sliver_id'] = "URN OF THE SLIVER"
             
         elif rspec_type == 'advertisement':
-            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['component_name'] = node_name # pc160  
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             node_current_state = self.driver.testbed_shell.get_node_current_state(node=node)
             rspec_node['available'] = self.clab_node_is_geni_available(node_current_state)
@@ -1155,10 +1166,10 @@ mkdir -p /root/.ssh  \n\
             rspec_node['interfaces'] = self.clab_node_interfaces_to_rspec_interfaces(node)
             
         elif rspec_type == 'manifest':
-            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-            rspec_node['client_id'] = node['name'] # 'MyNode'
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node_name # 'MyNode'
             rspec_node['sliver_id'] = "URN OF THE SLIVER"
-            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['component_name'] = node_name # pc160  
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             # Add SLIVERS
             rspec_node['slivers'] = self.clab_slivers_to_rspec_slivers(node)
@@ -1172,7 +1183,7 @@ mkdir -p /root/.ssh  \n\
         # 'current_state'
         #rspec_node['uri'] = node['uri']
         #rspec_node['id'] = node['id']
-        #rspec_node['name'] = node['name']
+        #rspec_node['name'] = node_name
         #rspec_node['description'] = node['description']
         #rspec_node['arch'] = node['arch']
         #rspec_node['boot_sn'] = node['boot_sn']
@@ -1218,17 +1229,20 @@ mkdir -p /root/.ssh  \n\
         # RSpec standard fields of the Node element
         rspec_node['component_manager_id'] = hrn_to_urn(self.AUTHORITY, 'authority+cm') # urn:publicid:IDN+confine:clab+authority+cm
         rspec_node['exclusive'] = 'false'
+        
+        # Unicode normalize node name in case it contains special characters (no ascii chrarcters)
+        node_name = unicode_normalize(node['name'])
 
         if rspec_type == 'request':
-            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-            rspec_node['client_id'] = node['name'] # 'MyNode'
-            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node_name # 'MyNode'
+            rspec_node['component_name'] = node_name # pc160  
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
             
         elif rspec_type == 'advertisement':
-            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['component_name'] = node_name # pc160  
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             node_current_state = self.driver.testbed_shell.get_node_current_state(node=node)
             rspec_node['available'] = self.clab_node_is_geni_available(node_current_state)
@@ -1238,10 +1252,10 @@ mkdir -p /root/.ssh  \n\
             rspec_node['interfaces'] = self.clab_node_interfaces_to_rspec_interfaces(node)
         
         elif rspec_type == 'manifest':
-            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-            rspec_node['client_id'] = node['name'] # 'MyNode'
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node_name # 'MyNode'
             rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
-            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['component_name'] = node_name # pc160  
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             # Add SLIVERS
             rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
@@ -1250,10 +1264,10 @@ mkdir -p /root/.ssh  \n\
             #rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':management_ntwk_iface['ipv6_addr'], 'port':'22', 'username':'root'}}]
             
         elif rspec_type == 'manifest_provision':
-            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node['name']) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-            rspec_node['client_id'] = node['name'] # 'MyNode'
+            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            rspec_node['client_id'] = node_name # 'MyNode'
             rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
-            rspec_node['component_name'] = node['name'] # pc160  
+            rspec_node['component_name'] = node_name # pc160  
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             # Add SLIVERS
             rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
@@ -1271,7 +1285,7 @@ mkdir -p /root/.ssh  \n\
         # 'current_state'
         #rspec_node['uri'] = node['uri']
         #rspec_node['id'] = node['id']
-        #rspec_node['name'] = node['name']
+        #rspec_node['name'] = node_name
         #rspec_node['description'] = node['description']
         #rspec_node['arch'] = node['arch']
         #rspec_node['boot_sn'] = node['boot_sn']
@@ -1312,14 +1326,17 @@ mkdir -p /root/.ssh  \n\
         local_iface = node['local_iface']
         direct_ifaces = node['direct_ifaces']
         
+        # Unicode normalize node name in case it contains special characters (no ascii chrarcters)
+        node_name = unicode_normalize(node['name'])
+        
         if local_iface:
-            client_id = '%s:%s'%(node['name'], local_iface)
+            client_id = '%s:%s'%(node_name, local_iface)
             rspec_local_iface = dict([('interface_id', local_iface), ('node_id', node['id']), 
                                       ('role', 'local_iface'), ('client_id', client_id)])
             rspec_interfaces.append(rspec_local_iface)
         if direct_ifaces:
             for direct_iface in direct_ifaces:
-                client_id = '%s:%s'%(node['name'], direct_iface)
+                client_id = '%s:%s'%(node_name, direct_iface)
                 rspec_direct_iface = dict([('interface_id', direct_iface), ('node_id', node['id']), 
                                           ('role', 'direct_iface'), ('client_id', client_id)])
                 rspec_interfaces.append(rspec_direct_iface)
