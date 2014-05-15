@@ -203,7 +203,7 @@ class ClabAggregate:
                 # urns = set of slivers urns in a single slice
                 # Get the slice from one of the urn-sliver (dictionary slice)
                 slice=get_slice_by_sliver_urn(self.driver, urns[0])
-                geni_urn=slicename_to_urn(self.AUTHORITY, slice['name'])
+                geni_urn=slicename_to_urn(slice['name'])
                 # Get slivers from the urns list (list of slivers dictionary)
                 slivers=[]
                 for urn in urns:
@@ -1078,6 +1078,159 @@ mkdir -p /root/.ssh  \n\
             if allocation: return 'geni_provisioned'
             elif operational: return 'geni_failed'
  
+ 
+    def clab_state_to_geni_boot_state(self, clab_state):
+        '''
+        Function to translate the clab-specific states of nodes to the standard geni boot states.
+        
+        :param clab_state: C-Lab specific state of Node
+        :type string
+        
+        :returns GENI boot state
+        :rtype string
+        '''
+        # NODE STATES 
+        if clab_state in ['debug','safe','failure', 'offline', 'crashed']:
+            # debug: the nodes has incomplete/invalid configuration
+            # safe: complete/valid configuration but not available for hosting slivers
+            # failure: node experimenting hw/sfw problems, not available for slivers
+            return 'geni_unavailable'
+        elif clab_state == 'production':
+            # production: node running and available for slivers
+            return 'geni_available'
+    
+    
+    def clab_state_to_geni_allocation_state(self, clab_state):
+        '''
+        Function to translate the clab-specific states to the standard geni allocaiton states.
+        
+        :param clab_state: C-Lab specific state of Node/Slice/Sliver
+        :type string
+        
+        :returns GENI allocation state
+        :rtype string
+        '''
+        # NODE STATES 
+        if clab_state in ['debug','safe','failure', 'offline', 'crashed']:
+            # debug: the nodes has incomplete/invalid configuration
+            # safe: complete/valid configuration but not available for hosting slivers
+            # failure: node experimenting hw/sfw problems, not available for slivers
+            return 'geni_unavailable'
+        elif clab_state == 'production':
+            # production: node running and available for slivers
+            return 'geni_available'
+        
+        # SLICE/SLIVER STATES
+    
+        # NORMAL STATES
+        elif clab_state in ['register', 'registered']:
+            # register(ed): slice/sliver descriptions correct and  known by the server
+            return 'geni_allocated'
+
+        elif clab_state in ['deploy', 'deployed']:
+            # deploy(ed): slice/slivers have requested resources allocated and data installed.
+            return 'geni_provisioned'
+            
+        elif clab_state in ['start', 'started']:
+            # start(ed): slice/slivers are to have their components started
+            return 'geni_provisioned'
+            
+        elif clab_state in ['unknown', 'nodata', None]:
+            return 'geni_unallocated'
+        
+        #TRANSITORY STATES
+        elif clab_state in ['allocating', '(allocating)', '(allocate)']:
+            # Transitory state that runs the allocate action
+            return 'geni_unallocated'
+
+        elif clab_state in ['deploying', '(deploying)']:
+            # Transitory state that runs the deploy action
+            return 'geni_allocated'
+            
+        elif clab_state in ['starting', '(starting)']:
+            # Transitory state that runs the start action
+            return 'geni_provisioned'
+        
+        # FAILURE STATES
+        elif clab_state =='fail_alloc':
+            # Transitory state that runs the allocate action
+            return 'geni_unallocated'
+            
+        elif clab_state == 'fail_deploy':
+            # Transitory state that runs the deploy action
+            return 'geni_allocated'
+            
+        elif clab_state == 'fail_start':
+            # Transitory state that runs the start action
+            return 'geni_provisioned'
+            
+            
+            
+    def clab_state_to_geni_operational_state(self, clab_state):
+        '''
+        Function to translate the clab-specific states to the standard geni operational states.
+
+        :param clab_state: C-Lab specific state of Node/Slice/Sliver
+        :type string
+        
+        :returns GENI operational state
+        :rtype string
+        '''
+        # NODE STATES 
+        if clab_state in ['debug','safe','failure', 'offline', 'crashed']:
+            # debug: the nodes has incomplete/invalid configuration
+            # safe: complete/valid configuration but not available for hosting slivers
+            # failure: node experimenting hw/sfw problems, not available for slivers
+            return 'geni_unavailable'
+        elif clab_state == 'production':
+            # production: node running and available for slivers
+            return 'geni_available'
+        
+        # SLICE/SLIVER STATES
+        # Distinguish between Allocation state and Operational state
+    
+        # NORMAL STATES
+        elif clab_state in ['register', 'registered']:
+            # register(ed): slice/sliver descriptions correct and  known by the server
+            return 'geni_notready'
+            
+        elif clab_state in ['deploy', 'deployed']:
+            # deploy(ed): slice/slivers have requested resources allocated and data installed.
+            return 'geni_notready'
+            
+        elif clab_state in ['start', 'started']:
+            # start(ed): slice/slivers are to have their components started
+            return 'geni_ready'
+            
+        elif clab_state in ['unknown', 'nodata', None]:
+            return 'geni_pending_allocation'
+        
+        #TRANSITORY STATES
+        elif clab_state in ['allocating', '(allocating)', '(allocate)']:
+            # Transitory state that runs the allocate action
+            return 'geni_pending_allocation'
+            
+        elif clab_state in ['deploying', '(deploying)']:
+            # Transitory state that runs the deploy action
+            return 'geni_notready'
+            
+        elif clab_state in ['starting', '(starting)']:
+            # Transitory state that runs the start action
+            return 'geni_configuring'
+        
+        # FAILURE STATES
+        elif clab_state =='fail_alloc':
+            # Transitory state that runs the allocate action
+            return 'geni_failed'
+            
+        elif clab_state == 'fail_deploy':
+            # Transitory state that runs the deploy action
+            return 'geni_failed'
+            
+        elif clab_state == 'fail_start':
+            # Transitory state that runs the start action
+            return 'geni_failed'
+            
     
         
     def get_nodes_by_geni_state(self, state=None):
@@ -1369,8 +1522,8 @@ mkdir -p /root/.ssh  \n\
 
     def clab_sliver_to_rspec_sliver(self, sliver, options={}):
         '''
-        Translate a list of CLab-specific slivers dictionaries of a Node 
-        to a list of standard Rspec slivers.
+        Translate a list of Clab-specific sliver dictionary  
+        to a standard Rspec sliver.
         
         :param node: C-Lab specific dictionary of Node
         :type dict

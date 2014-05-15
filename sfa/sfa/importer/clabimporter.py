@@ -505,7 +505,7 @@ class ClabImporter:
         # For the current site authority, import child entities/records    
         # SLICES
         # Obtain parameters of the node: site_auth, site_name and hrn of the slice
-        slice_hrn = slicename_to_hrn(site_hrn, slice['name'])
+        slice_hrn = slicename_to_hrn(slice['name'], site_hrn)
         # Try to locate the slice_hrn in the SFA records
         slice_record = self.locate_by_type_hrn ('slice', slice_hrn)
         

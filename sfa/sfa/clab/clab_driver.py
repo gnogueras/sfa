@@ -21,7 +21,7 @@ from sfa.trust.credential import Credential
 from sfa.clab.clab_aggregate import ClabAggregate
 from sfa.clab.clab_registry import ClabRegistry
 from sfa.clab.clab_shell import ClabShell
-from sfa.clab.clab_xrn import slicename_to_hrn, hostname_to_hrn, ClabXrn, type_of_urn, get_slice_by_sliver_urn, urn_to_slicename
+from sfa.clab.clab_xrn import slicename_to_urn, hostname_to_hrn, ClabXrn, type_of_urn, get_slice_by_sliver_urn, urn_to_slicename
 from sfa.clab.clab_logging import clab_logger
 
 
@@ -87,30 +87,39 @@ class ClabDriver (Driver):
         :return nothing
         :rtype void
         '''
-        # build list of cred object hrns
+        # build list of cred object hrns, NOT NEEDED NOW
         slice_cred_names = []
         for cred in creds:
             slice_cred_hrn = Credential(cred=cred).get_gid_object().get_hrn()
             slice_cred_names.append(ClabXrn(xrn=slice_cred_hrn).get_slicename())
 
+        # build list of urns of objects on which the credentials give rights
+        slice_cred_urns = []
+        for cred in creds:
+            slice_cred_urn = Credential(cred=cred).get_gid_object().get_urn()
+            slice_cred_urns.append(slice_cred_urn)
+        
         # Get the slice names of all the slices included in the urn
         slice_names = []
+        slice_urns = []
         for urn in urns:
             if type_of_urn(urn)=='sliver':
                 # URN of a sliver. Get the slice where the sliver is contained
                 slice = get_slice_by_sliver_urn(self, urn)
                 slice_names.append(slice['name'])
+                slice_urns.append(slicename_to_urn(slice['name']))
             elif type_of_urn(urn)=='slice':
                 # URN of a slice
                 slice_names.append(urn_to_slicename(urn))
+                slice_urns.append(urn)
         
-        if not slice_names:
+        if not slice_urns:
              raise Forbidden("sliver urn not provided")
 
         # make sure we have a credential for every specified sliver ierd
-        for sliver_name in slice_names:
-            if sliver_name not in slice_cred_names:
-                msg = "Valid credential not found for target: %s" % sliver_name
+        for slice_urn in slice_urns:
+            if slice_urn not in slice_cred_urns:
+                msg = "Valid credential not found for target: %s" % slice_urn
                 raise Forbidden(msg)
  
 

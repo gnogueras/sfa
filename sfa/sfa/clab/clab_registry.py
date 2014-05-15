@@ -395,7 +395,7 @@ class ClabRegistry:
                 record['users'] = user_hrns 
             if 'slice_ids' in record:
                 slicenames = [slices[slice_id]['name'] for slice_id in record['slice_ids'] if slice_id in slices]
-                slice_hrns = [slicename_to_hrn(auth_hrn, slicename) for slicename in slicenames]
+                slice_hrns = [slicename_to_hrn(slicename, auth_hrn) for slicename in slicenames]
                 record['slices'] = slice_hrns
             if 'node_ids' in record:
                 hostnames = [nodes[node_id]['name'] for node_id in record['node_ids'] if node_id in nodes]

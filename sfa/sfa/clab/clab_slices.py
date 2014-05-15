@@ -71,7 +71,7 @@ class ClabSlices:
                 # TODO: get group uri from credentials
                 #group_uri='http://172.24.42.141/api/groups/1'
                 created_slice = self.driver.testbed_shell.create_slice(slicename)
-                self.import_slice_to_registry(created_slice['name'])
+                #self.import_slice_to_registry(created_slice['name'])
                 clab_logger.debug("Verify_Slice in Allocate: Slice did not exist. Slice created: %s"%created_slice['name'])
                 return created_slice
             else:

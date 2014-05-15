@@ -87,9 +87,10 @@ def hostname_to_urn(auth, hostname):
     return ClabXrn(auth=auth, hostname=hostname).get_urn()
 
 
-def slicename_to_hrn (auth, slicename):
+def slicename_to_hrn (slicename, auth=None):
     """
     Turns slice name into hrn.
+    In the C-Lab SFAWrap the slicename is the orginial URN of the slice in the federated authority.
     
     :param auth: Site authority
     :type string
@@ -100,13 +101,18 @@ def slicename_to_hrn (auth, slicename):
     :returns: Slice's hrn
     :rtype: string
     """
-    escaped_slicename = escape_testbed_obj_names(slicename)
-    return ClabXrn(auth=auth, slicename=escaped_slicename).get_hrn()
+    if auth:
+        escaped_slicename = escape_testbed_obj_names(slicename)
+        return ClabXrn(auth=auth, slicename=escaped_slicename).get_hrn()
+    else:
+        return ClabXrn(xrn=slicename, type='slice').get_hrn() # URN of slice as slicename in CLab
 
 
-def slicename_to_urn (auth, slicename):
+def slicename_to_urn (slicename, auth=None):
     """
     Turns Slice name into urn.
+    In the C-Lab SFAWrap the slicename is the orginial URN of the slice in the federated authority.
+
     
     :param auth: Site authority
     :type string
@@ -117,7 +123,10 @@ def slicename_to_urn (auth, slicename):
     :returns: Slice's urn.
     :rtype: string
     """
-    return ClabXrn(auth=auth, slicename=slicename).get_urn()
+    if auth:
+        return ClabXrn(auth=auth, slicename=slicename).get_urn()
+    else:
+        return slicename  # URN of slice as slicename in CLab
 
 
 def urn_to_slicename (urn):
@@ -130,8 +139,9 @@ def urn_to_slicename (urn):
     :returns: Slice name.
     :rtype: string
     """
-    return ClabXrn(xrn=urn, type='slice').get_slicename()
-
+    #return ClabXrn(xrn=urn, type='slice').get_slicename()
+    #return "wall2+"+ClabXrn(xrn=urn, type='slice').get_slicename()
+    return urn # URN of slice as slicename in CLab
 
 def hrn_to_slicename (hrn):
     """
@@ -143,8 +153,9 @@ def hrn_to_slicename (hrn):
     :returns: Slice name.
     :rtype: string
     """
-    return ClabXrn(xrn=hrn, type='slice').get_slicename()
-
+    #return ClabXrn(xrn=hrn, type='slice').get_slicename()
+    #return "wall2"+ClabXrn(xrn=hrn, type='slice').get_slicename()
+    return ClabXrn(xrn=hrn, type='slice').get_urn() # URN of slice as slicename in CLab
 
 def urn_to_nodename (urn):
     """

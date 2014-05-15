@@ -280,7 +280,7 @@ class ClabShell:
             if sliver_uri:
                 sliver = self.get_by_uri(sliver_uri)
             elif sliver_name:
-                sliver = controller.slivers.retrieve().get(name=sliver_name).serialize()
+                sliver = controller.slivers.retrieve().get(id=sliver_name).serialize()
             elif sliver_id:
                 sliver = controller.slivers.retrieve().get(id=sliver_id).serialize()
         except TypeError:
