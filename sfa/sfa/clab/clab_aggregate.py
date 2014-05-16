@@ -1401,6 +1401,7 @@ mkdir -p /root/.ssh  \n\
             rspec_node['available'] = self.clab_node_is_geni_available(node_current_state)
             rspec_node['boot_state'] = self.clab_state_to_geni_state(node_current_state)
             rspec_node['hardware_types'] = [HardwareType({'name': node['arch']})]
+            rspec_node['sliver_type']='RD_sliver'
             # Add INTERFACES
             rspec_node['interfaces'] = self.clab_node_interfaces_to_rspec_interfaces(node)
         
