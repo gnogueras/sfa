@@ -38,7 +38,8 @@ def xrn_object(root_auth, hostname):
     :returns: the C-Lab node's xrn
     :rtype: Xrn
     """
-    return Xrn('.'.join([root_auth, Xrn.escape(hostname)]), type='node')
+    escaped_hostname = escape_testbed_obj_names(hostname)
+    return Xrn('.'.join([root_auth, Xrn.escape(escaped_hostname)]), type='node')
     
 
 def xrn_to_hostname(xrn):
@@ -52,7 +53,8 @@ def xrn_to_hostname(xrn):
     :returns: node's hostname
     :rtype: string
     """
-    return Xrn.unescape(Xrn(xrn=xrn, type='node').get_leaf())
+    unescaped_hostname = unescape_testbed_obj_names(Xrn(xrn=xrn, type='node').get_leaf())
+    return Xrn.unescape(unescaped_hostname)
 
 
 def hostname_to_hrn (auth, hostname):
@@ -84,7 +86,8 @@ def hostname_to_urn(auth, hostname):
     :returns: Node's urn.
     :rtype: string
     """
-    return ClabXrn(auth=auth, hostname=hostname).get_urn()
+    escaped_hostname = escape_testbed_obj_names(hostname)
+    return ClabXrn(auth=auth, hostname=escaped_hostname).get_urn()
 
 
 def slicename_to_hrn (slicename, auth=None):
@@ -124,7 +127,8 @@ def slicename_to_urn (slicename, auth=None):
     :rtype: string
     """
     if auth:
-        return ClabXrn(auth=auth, slicename=slicename).get_urn()
+        escaped_slicename = escape_testbed_obj_names(slicename)
+        return ClabXrn(auth=auth, slicename=escaped_slicename).get_urn()
     else:
         return slicename  # URN of slice as slicename in CLab
 
@@ -154,7 +158,6 @@ def hrn_to_slicename (hrn):
     :rtype: string
     """
     #return ClabXrn(xrn=hrn, type='slice').get_slicename()
-    #return "wall2"+ClabXrn(xrn=hrn, type='slice').get_slicename()
     return ClabXrn(xrn=hrn, type='slice').get_urn() # URN of slice as slicename in CLab
 
 def urn_to_nodename (urn):
@@ -225,7 +228,8 @@ def urn_to_slivername (urn):
     :returns: Sliver name.
     :rtype: string
     """
-    return ClabXrn(xrn=urn, type='sliver').get_slivername()
+    escaped_slivername = ClabXrn(xrn=urn, type='sliver').get_slivername()
+    return unescape_testbed_obj_names(escaped_slivername)
 
 def hrn_to_slivername (hrn):
     """
@@ -237,7 +241,8 @@ def hrn_to_slivername (hrn):
     :returns: Sliver name.
     :rtype: string
     """
-    return ClabXrn(xrn=hrn, type='sliver').get_slivername()
+    escaped_slivername =  ClabXrn(xrn=hrn, type='sliver').get_slivername()
+    return unescape_testbed_obj_names(escaped_slivername)
 
 
 def xrn_slivername_to_clab_slivername(slivername):
@@ -311,13 +316,15 @@ def username_to_urn(auth, username):
     :returns: Node's urn.
     :rtype: string
     """
-    return ClabXrn(auth=auth, username=username).get_urn()
+    escaped_username = escape_testbed_obj_names(username)
+    return ClabXrn(auth=auth, username=escaped_username).get_urn()
 
 def escape_testbed_obj_names(object_name):
     """
     Escape names of objects from the testbed (nodes, users, slices, slivers...) 
     to avoid/replace characters/sequences of characters that might produce errors 
-    or missinterpretations when obtaining the correspondind hrns. 
+    or missinterpretations when obtaining the correspondind hrns. Include also escape patterns
+    from GENI specification (http://groups.geni.net/geni/wiki/GeniApiIdentifiers)
     
     :param object_name: testbed-specific name of an object (user, node, slice, sliver...)
     :type string.
@@ -330,9 +337,29 @@ def escape_testbed_obj_names(object_name):
     # Replace "." with double underscore "__"
     # "." gives problems because is interpreted as subauthority
     if "." in object_name:
-        escaped_name = object_name.replace(".","__")
-    
+        escaped_name = escaped_name.replace(".","__")
+    if " " in object_name:
+        escaped_name = escaped_name.replace(" ","+")
     return escaped_name
+
+
+def unescape_testbed_obj_names(object_name):
+    """
+    Unescape names of objects from the testbed (nodes, users, slices, slivers...) 
+        
+    :param object_name: escaped name of an object (user, node, slice, sliver...)
+    :type string.
+
+    :returns: unescaped name 
+    :rtype: string
+    """
+    unescaped_name = object_name
+    
+    if "__" in object_name:
+        unescaped_name = unescaped_name.replace("__",".")
+    if "+" in object_name:
+        unescaped_name = unescaped_name.replace("+"," ")
+    return unescaped_name
     
     
 def unicode_normalize(name):

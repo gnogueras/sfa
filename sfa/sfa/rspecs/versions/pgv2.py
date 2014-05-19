@@ -113,7 +113,7 @@ class PGv2(RSpecVersion):
             node_elem = node_elems[0]
             
             # determine sliver types for this node
-            valid_sliver_types = ['emulab-openvz', 'raw-pc', 'plab-vserver', 'plab-vnode']
+            valid_sliver_types = ['emulab-openvz', 'raw-pc', 'plab-vserver', 'plab-vnode','RD_sliver']
             requested_sliver_type = None
             for sliver_type in node_elem.get('slivers', []):
                 if sliver_type.get('type') in valid_sliver_types:
