@@ -954,9 +954,8 @@ mkdir -p /root/.ssh  \n\
         sliver_current_state = self.driver.testbed_shell.get_sliver_current_state(sliver=sliver)
         
         # Fill geni states
-        geni_allocation_status = self.clab_state_to_geni_state(sliver['set_state'], allocation=True)
-        #geni_allocation_status = self.clab_state_to_geni_state(sliver_current_state, allocation=True)
-        geni_operational_status = self.clab_state_to_geni_state(sliver_current_state, operational=True)
+        geni_allocation_status = self.clab_state_to_geni_allocation_state(sliver['set_state'])
+        geni_operational_status = self.clab_state_to_geni_operational_state(sliver_current_state)
         logger.debug("CLAB_SLIVER_TO_GENI_SLIVER set_state: %s  - current state: %s - alloc: %s - op: %s"%(sliver['set_state'],sliver_current_state,geni_allocation_status,geni_operational_status))
         
         # Create and fill geni sliver dictionary
@@ -1230,7 +1229,7 @@ mkdir -p /root/.ssh  \n\
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             node_current_state = self.driver.testbed_shell.get_node_current_state(node=node)
             rspec_node['available'] = self.clab_node_is_geni_available(node_current_state)
-            rspec_node['boot_state'] = self.clab_state_to_geni_state(node_current_state)
+            rspec_node['boot_state'] = self.clab_state_to_geni_boot_state(node_current_state)
             rspec_node['hardware_types'] = [HardwareType({'name': node['arch']})]
             # Add INTERFACES
             rspec_node['interfaces'] = self.clab_node_interfaces_to_rspec_interfaces(node)
@@ -1316,7 +1315,7 @@ mkdir -p /root/.ssh  \n\
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             node_current_state = self.driver.testbed_shell.get_node_current_state(node=node)
             rspec_node['available'] = self.clab_node_is_geni_available(node_current_state)
-            rspec_node['boot_state'] = self.clab_state_to_geni_state(node_current_state)
+            rspec_node['boot_state'] = self.clab_state_to_geni_boot_state(node_current_state)
             rspec_node['hardware_types'] = [HardwareType({'name': node['arch']})]
             rspec_node['sliver_type']='RD_sliver'
             # Add INTERFACES
