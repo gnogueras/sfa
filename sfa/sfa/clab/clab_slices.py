@@ -128,6 +128,7 @@ class ClabSlices:
             
             try:
                 # component_id = URN of the node | component_manager_id = URN of the authority
+                # component_name = name of the node
                 nodename=urn_to_nodename(node_element['component_id'])
                 node_uri = urn_to_uri(self.driver, node_element['component_id'])
                 node = self.driver.testbed_shell.get_node_by(node_uri=node_uri)
@@ -146,7 +147,7 @@ class ClabSlices:
                 # Required bound node does not exist
                 if creation_flag:
                     # Create node
-                    node_name = node_element['client_id'] # cient_id = node name
+                    node_name = node_element['component_name'] # cient_id = node name
                     # TODO: get group uri from credentials
                     #group_uri='http://172.24.42.141/api/groups/1'
                     #created_node = self.driver.testbed_shell.create_node({'name':node_name, 'group_uri':group_uri})
@@ -157,8 +158,8 @@ class ClabSlices:
                 
                 else:
                     # Return empty dict, raise an exception
-                    clab_logger.debug("Verify_Node in Allocate: specified bound node did not exist (%s). Creation not allowed!"%node_element['client_id'])
-                    raise UnexistingResource(node_element['client_id'], message="The requested node '%s' does not exist and cannot be created in the testbed"%node_element['client_id']) 
+                    clab_logger.debug("Verify_Node in Allocate: specified bound node did not exist (%s). Creation not allowed!"%node_element['component_name'])
+                    raise UnexistingResource(node_element['component_name'], message="The requested node '%s' does not exist and cannot be created in the testbed"%node_element['component_name']) 
                     #return {}
                 
         else: 
