@@ -529,7 +529,7 @@ class ClabAggregate:
         rspec_nodes = []
         geni_slivers = []
         for sliver in slivers:
-            rspec_nodes.append(self.clab_sliver_to_rspec_node(sliver, 'manifest_provision'))
+            rspec_nodes.append(self.clab_sliver_to_rspec_node(sliver, 'manifest'))
             # Force allocated state (to avoid error in automatic test Allocate)
             #geni_sliver = self.clab_sliver_to_geni_sliver(sliver)
             #geni_sliver['geni_allocation_status'] = 'geni_provisioned'
@@ -1329,24 +1329,25 @@ mkdir -p /root/.ssh  \n\
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             # Add SLIVERS
             rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
-            # Add SERVICES and LOGIN information
-            #management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
-            #rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':management_ntwk_iface['ipv6_addr'], 'port':'22', 'username':'root'}}]
             
-        elif rspec_type == 'manifest_provision':
-            rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
-            rspec_node['client_id'] = node_name # 'MyNode'
-            rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
-            rspec_node['component_name'] = node_name # pc160  
-            rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
+            if self.driver.testbed_shell.get_sliver_set_state(sliver=sliver) in ['deploy', 'start']:
+                # Add SERVICES and LOGIN information
+                ipv6_sliver_addr = self.driver.testbed_shell.get_ipv6_sliver_address(sliver=sliver)
+                rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':ipv6_sliver_addr, 'port':'22', 'username':'root'}}]
+          
+            
+        #elif rspec_type == 'manifest_provision':
+            #rspec_node['component_id'] = hostname_to_urn(self.AUTHORITY, node_name) # 'urn:publicid:IDN+confine:clab+node+MyNode'
+            #rspec_node['client_id'] = node_name # 'MyNode'
+            #rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
+            #rspec_node['component_name'] = node_name # pc160  
+            #rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             # Add SLIVERS
-            rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
+            #rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
             # Add SERVICES and LOGIN information
-            #management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
-            #rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':management_ntwk_iface['ipv6_addr'], 'port':'22', 'username':'root'}}]
             # Calculate the IPv6 address of the sliver
-            ipv6_sliver_addr = self.driver.testbed_shell.get_ipv6_sliver_address(sliver=sliver)
-            rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':ipv6_sliver_addr, 'port':'22', 'username':'root'}}]
+            #ipv6_sliver_addr = self.driver.testbed_shell.get_ipv6_sliver_address(sliver=sliver)
+            #rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':ipv6_sliver_addr, 'port':'22', 'username':'root'}}]
             
 
         # Rspec CLab-specific fields

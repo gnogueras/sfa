@@ -517,6 +517,31 @@ class ClabShell:
         return current_state
     
     
+    def get_sliver_set_state(self, sliver=None, sliver_uri=None):
+        '''
+        Get the set state of the sliver that corresponds to the 
+        given keyword argument (uri or dict)
+        One of the parameters must be present.
+        
+        :param sliver_uri: (optional) get current state of the sliver with this uri
+        :type string
+        
+        :param sliver: (optional) get current state of this sliver dict
+        :type dict
+        
+        :returns Set state of the specified sliver
+        :rtype string
+        '''
+        # Get sliver
+        if not sliver:
+            sliver = self.get_sliver_by(sliver_uri=sliver_uri)
+        
+        if sliver['set_state']:
+            return sliver['set_state']
+        else:
+            slice = self.get_slice_by(slice_uri=sliver['slice']['uri'])
+            return slice['set_state']
+    
     def get_sliver_management_ntwk_iface(self, sliver=None, sliver_uri=None):
         '''
         Get the information of the management network interface of the sliver
