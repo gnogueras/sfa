@@ -1390,17 +1390,20 @@ mkdir -p /root/.ssh  \n\
         :rtype list
         ''' 
         rspec_interfaces = []
-        local_iface = node['local_iface']
+        
+        # LOCAL IFACE FIELD REMOVED IN THE CONTROLLER UPGRADE (28/05/2014)
+        #local_iface = node['local_iface']
         direct_ifaces = node['direct_ifaces']
         
         # Unicode normalize node name in case it contains special characters (no ascii chrarcters)
         node_name = unicode_normalize(node['name'])
         
-        if local_iface:
-            client_id = '%s:%s'%(node_name, local_iface)
-            rspec_local_iface = dict([('interface_id', local_iface), ('node_id', node['id']), 
-                                      ('role', 'local_iface'), ('client_id', client_id)])
-            rspec_interfaces.append(rspec_local_iface)
+        #if local_iface:
+        #    client_id = '%s:%s'%(node_name, local_iface)
+        #    rspec_local_iface = dict([('interface_id', local_iface), ('node_id', node['id']), 
+        #                              ('role', 'local_iface'), ('client_id', client_id)])
+        #    rspec_interfaces.append(rspec_local_iface)
+        
         if direct_ifaces:
             for direct_iface in direct_ifaces:
                 client_id = '%s:%s'%(node_name, direct_iface)
