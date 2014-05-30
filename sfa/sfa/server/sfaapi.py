@@ -58,7 +58,7 @@ class SfaApi (XmlrpcApi):
         self.cache = cache
         if self.cache is None:
             self.cache = Cache()
-
+        
         # load registries
         from sfa.server.registry import Registries
         self.registries = Registries() 

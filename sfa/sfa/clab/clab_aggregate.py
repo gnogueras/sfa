@@ -19,6 +19,7 @@ from sfa.rspecs.elements.node import NodeElement
 from sfa.util.faults import SearchFailed
 
 import datetime
+import time
 
 # local imports from the Project
 #from rspecs.elements.versions.clabNode import ClabNode
@@ -109,15 +110,7 @@ class ClabAggregate:
         version = version_manager.get_version('GENI 3')        
         rspec_version = version_manager._get_version(version.type, version.version, 'ad')
         rspec = RSpec(version=rspec_version, user_options=options)        
-        
-        # List resources: available nodes and/or slices??
-        # belonging to the aggregate
-        # and the user??? 
-        # all the users can create slices in any node?
-        # the users can create slivers in their own slices?
-        
-        # username can be obtained form the credential
-        
+           
         #Geni state in options?
         state=None
         if options.get('available'): state='available'
@@ -133,7 +126,8 @@ class ClabAggregate:
         # Function get slices
         #slices = self.get_slices_by_geni_state(state)
 
-        rspec.version.add_nodes(rspec_nodes)       
+        rspec.version.add_nodes(rspec_nodes)
+        
         return rspec.toxml()
     
     

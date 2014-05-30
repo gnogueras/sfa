@@ -354,6 +354,64 @@ Thierry Parmentelat
         </variable>
       </variablelist>
     </category>
+    !-- ======================================== -->
+    <category id="sfa_clab">
+      <name></name>
+      <description>The settings for using SFA with a C-Lab testbed.</description>
+
+      <variablelist>
+        <variable id="user" type="string">
+          <name>C-Lab user</name>
+          <value>vct</value>
+          <description></description>
+        </variable>
+        <variable id="password" type="string">
+          <name>C-Lab password for the user</name>
+          <value>vct</value>
+          <description></description>
+        </variable>
+        <variable id="group" type="string">
+          <name>C-Lab group of the user</name>
+          <value>vct</value>
+          <description></description>
+        </variable>
+        <variable id="url" type="string">
+          <name>C-Lab Testbed Controller URL, XMLRPC URL</name>
+          <value>http://172.24.42.141/api</value>
+          <description>URL for the C-Lab Testbed xmlrpc API</description>
+        </variable>
+        <variable id="auto_slice_creation" type="boolean">
+          <name>Flag for Automatic Slice creation</name>
+          <value>True</value>
+          <description></description>
+        </variable>
+        <variable id="auto_node_creation" type="boolean">
+          <name>Flag for Automatic Node creation</name>
+          <value>False</value>
+          <description></description>
+        </variable>
+        <variable id="aggregate_caching" type="boolean">
+          <name>Boolean indicating if cache is AM is enabled</name>
+          <value>True</value>
+          <description></description>
+        </variable>
+        <variable id="aggregate_cache_expiration_time" type="int">
+          <name>If cache is enabled, the expiration time for the records (IN SECONDS)</name>
+          <value>3600</value>
+          <description></description>
+        </variable>
+        <variable id="default_template" type="string">
+          <name>Default template for slivers</name>
+          <value>Debian Squeeze</value>
+          <description></description>
+        </variable>
+        <variable id="temp_dir_exp_data" type="string">
+          <name>Temporal directory for generated exp-data files</name>
+          <value>/home/gerard/clab_sfawrap/experiment-data/</value>
+          <description></description>
+        </variable>
+      </variablelist>
+    </category>
 
     <!-- ======================================== -->
 

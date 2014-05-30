@@ -68,17 +68,25 @@ class Cache:
 
     cache  = {}
     lock = threading.RLock()
-
-    def __init__(self, filename=None):
+    expiration_time = DEFAULT_CACHE_TTL
+    
+    def __init__(self, exp_time=None, filename=None):
+        if exp_time:
+            self.expiration_time = exp_time
         if filename:
             self.load_from_file(filename)
-   
-    def add(self, key, value, ttl = DEFAULT_CACHE_TTL):
+        
+    def set_exp_time(self, exp_time):
+        self.expiration_time = exp_time
+    
+    def add(self, key, value, ttl = None):
+        if not ttl:
+            ttl = self.expiration_time
         with self.lock:
             if self.cache.has_key(key):
                 self.cache[key].set_data(value, ttl=ttl)
             else:
-                self.cache[key] = CacheData(value, ttl)
+                self.cache[key] = CacheData(value, ttl=ttl)
            
     def get(self, key):
         data = self.cache.get(key)

@@ -34,12 +34,14 @@ class ClabDriver (Driver):
 
     # the cache instance is a class member so it survives across incoming requests
     cache = None
+    expiration_time = None   # in seconds
 
     def __init__ (self, api):
         Driver.__init__ (self, api)
         self.config = api.config
         self.testbed_shell = ClabShell (self.config)
         self.cache=None
+        self
         
         # Debug print
         print "SFA_INTERFACE_HRN: %s"%(self.config.SFA_INTERFACE_HRN)
@@ -53,6 +55,8 @@ class ClabDriver (Driver):
         print "SFA_CLAB_AUTO_NODE_CREATION: %s"%(self.config.SFA_CLAB_AUTO_NODE_CREATION)
         print "SFA_CLAB_DEFAULT_TEMPLATE: %s"%(self.config.SFA_CLAB_DEFAULT_TEMPLATE)
         print "SFA_CLAB_TEMP_DIR_EXP_DATA: %s"%(self.config.SFA_CLAB_TEMP_DIR_EXP_DATA)
+        print "SFA_CLAB_AGGREGATE_CACHING: %s"%(self.config.SFA_CLAB_AGGREGATE_CACHING)
+        print "SFA_CLAB_AGGREGATE_CACHE_EXPIRATION_TIME: %s"%(self.config.SFA_CLAB_AGGREGATE_CACHE_EXPIRATION_TIME)
                
         # Get it from CONFIG
         self.AUTHORITY = ".".join([self.config.SFA_INTERFACE_HRN,self.config.SFA_GENERIC_FLAVOUR])
@@ -60,16 +64,13 @@ class ClabDriver (Driver):
         self.AUTOMATIC_SLICE_CREATION = self.config.SFA_CLAB_AUTO_SLICE_CREATION
         self.AUTOMATIC_NODE_CREATION = self.config.SFA_CLAB_AUTO_NODE_CREATION
         self.EXP_DATA_DIR = self.config.SFA_CLAB_TEMP_DIR_EXP_DATA
-        #self.AUTHORITY = 'confine.clab'
-        #self.TESTBEDNAME = 'C-Lab'
-        #self.AUTOMATIC_SLICE_CREATION = True
-        #self.AUTOMATIC_NODE_CREATION = False
                 
-# un-comment below lines to enable caching
-#        if config.SFA_AGGREGATE_CACHING:
-#            if ClabDriver.cache is None:
-#                ClabDriver.cache = Cache()
-#            self.cache = ClabDriver.cache
+        # Create the Cache instance if CACHING is enabled
+        if self.config.SFA_AGGREGATE_CACHING:
+            if ClabDriver.cache is None:
+                ClabDriver.cache = Cache(exp_time=self.config.SFA_CLAB_AGGREGATE_CACHE_EXPIRATION_TIME)
+            self.cache = ClabDriver.cache
+        
 
 
     def check_sliver_credentials(self, creds, urns):
@@ -204,8 +205,25 @@ class ClabDriver (Driver):
         GENI AM API v3 ListResources
         '''
         clab_logger.debug("%s:%s - Clab_Aggregate: list resources"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
+
+        # CACHE CLAB_DRIVERlist_resources operation is costly. Therefore, the result of list_resources is cached
+        
+        # Check the Cache for a valid (not expired) list_resources result        
+        #if self.cache:
+        #    list_resources_result = self.cache.get('list_resources')
+        #    if list_resources_result:
+        #        logger.debug("CACHE CLAB_DRIVER: list_resources result from cache")
+        #        return list_resources_result
+        
         aggregate = ClabAggregate(self)
-        return aggregate.list_resources(options=options)
+        list_resources_result = aggregate.list_resources(options=options)
+        
+        # Cache the result of list_resources operation for later requests
+        #if self.cache:
+        #    logger.debug ("CACHE CLAB_DRIVER: fresh result of list_resources stored in the cache with expiration time %s"%(self.expiration_time))
+        #    self.cache.add('list_resources', list_resources_result, ttl=self.expiration_time)
+        
+        return list_resources_result
     
     
     def describe(self, urns, version, options={}):
