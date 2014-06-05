@@ -59,7 +59,8 @@ class ClabDriver (Driver):
         print "SFA_CLAB_AGGREGATE_CACHE_EXPIRATION_TIME: %s"%(self.config.SFA_CLAB_AGGREGATE_CACHE_EXPIRATION_TIME)
                
         # Get it from CONFIG
-        self.AUTHORITY = ".".join([self.config.SFA_INTERFACE_HRN,self.config.SFA_GENERIC_FLAVOUR])
+        #self.AUTHORITY = ".".join([self.config.SFA_INTERFACE_HRN,self.config.SFA_GENERIC_FLAVOUR])
+        self.AUTHORITY = self.config.SFA_INTERFACE_HRN
         self.TESTBEDNAME = self.config.SFA_GENERIC_FLAVOUR
         self.AUTOMATIC_SLICE_CREATION = self.config.SFA_CLAB_AUTO_SLICE_CREATION
         self.AUTOMATIC_NODE_CREATION = self.config.SFA_CLAB_AUTO_NODE_CREATION

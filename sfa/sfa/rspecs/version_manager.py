@@ -26,7 +26,11 @@ class VersionManager:
 
     def _get_version(self, type, version_num=None, content_type=None):
         retval = None
+        #debug 
+        #logger.debug("VERSION MANAGER")
+        
         for version in self.versions:
+            #logger.debug("Type: " +version.type+"  Version: "+ version.version)
             if type is None or type.lower() == version.type.lower():
                 if version_num is None or str(float(version_num)) == str(float(version.version)):
                     if content_type is None or content_type.lower() == version.content_type.lower() \

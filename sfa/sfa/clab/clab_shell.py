@@ -797,7 +797,7 @@ class ClabShell:
         return created_slice.serialize()
     
         
-    def create_sliver(self, slice_uri, node_uri, interfaces_definition=None, properties={}):
+    def create_sliver(self, slice_uri, node_uri, interfaces_definition=None, template_definition=None, properties={}):
         '''
         Function to create a sliver. The parameters are the required arguments for sliver creation.
         Some of them have default values. 
@@ -823,10 +823,20 @@ class ClabShell:
         node = self.get_node_by(node_uri=node_uri)
         # Interfaces by default
         if not interfaces_definition:
-            interfaces_definition = [Resource(name='priv', type='private', nr=0), Resource(name='mgmt0', type='management', nr=1)]       
+            interfaces = [Resource(name='priv', type='private', nr=0), Resource(name='mgmt0', type='management', nr=1)]       
+        else:
+            interfaces = [Resource(name=iface['name'], type=iface['type'], nr=int(iface['nr'])) for iface in interfaces_definition]
+        # Check if template definition
+        if not template_definition:
+            template=None
+        else:
+            template_id=None
+            if template_definition.get('id'): 
+                template_id=int(template_definition.get('id'))
+            template=self.get_template_by(template_name=template_definition.get('name'), template_id=template_id)
         # Create sliver
         try:
-            created_sliver = slice.slivers.create(node=node, interfaces=interfaces_definition, properties=properties)
+            created_sliver = slice.slivers.create(node=node, interfaces=interfaces, template=template, properties=properties)
         except controller.ResponseStatusError as e:
             raise OperationFailed('create sliver', e.message)
         # Return sliver dict

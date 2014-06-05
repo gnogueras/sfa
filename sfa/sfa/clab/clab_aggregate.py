@@ -106,9 +106,15 @@ class ClabAggregate:
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3/CommonConcepts#RSpecdatatype
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#ListResources
         """
+        
+        # Options field (from jFed) contains: {'geni_rspec_version': {'version': '3', 'type': 'geni'}, 'geni_compressed': True}
+        rspec_version = options.get('geni_rspec_version').get('version', '3')
+        rspec_type = options.get('geni_rspec_version').get('type', '3')
+        
         version_manager = VersionManager()
-        version = version_manager.get_version('GENI 3')        
-        rspec_version = version_manager._get_version(version.type, version.version, 'ad')
+        #version = version_manager.get_version('GENI 3')        
+        #rspec_version= version_manager._get_version(version.type, version.version, 'ad')
+        rspec_version = version_manager._get_version(rspec_type, rspec_version, 'ad')
         rspec = RSpec(version=rspec_version, user_options=options)        
            
         #Geni state in options?
@@ -169,10 +175,20 @@ class ClabAggregate:
         .. seealso:: http://groups.geni.net/geni/wiki/GAPI_AM_API_V3#Describe
 
         """
+        
+        # Options field (from jFed) contains: {'geni_rspec_version': {'version': '3', 'type': 'geni'}, 'geni_compressed': True}
+        rspec_version = '3'
+        rspec_type = 'geni'
+        rspec_definition = options.get('geni_rspec_version')
+        if rspec_definition:
+            rspec_version = rspec_definition.get('version', '3')
+            rspec_type = rspec_definition.get('type', 'geni')
+        
         version_manager = VersionManager()
-        version = version_manager.get_version('GENI 3')        
-        rspec_version = version_manager._get_version(version.type, version.version, 'manifest')
-        rspec = RSpec(version=rspec_version, user_options=options)  
+        #version = version_manager.get_version('GENI 3')        
+        #rspec_version= version_manager._get_version(version.type, version.version, 'manifest')
+        rspec_version = version_manager._get_version(rspec_type, rspec_version, 'manifest')
+        rspec = RSpec(version=rspec_version, user_options=options)   
         
         # Check that urn argument is a list (not a string)
         if isinstance(urns, str): urns = [urns] 
@@ -272,9 +288,13 @@ class ClabAggregate:
         # Verify slice exist. Return slice in Register state (to be modified)
         slice = checker.verify_slice(slice_urn, credentials, self.AUTOMATIC_SLICE_CREATION, options={})
         
+        # version
+        rspec_version = {'type':'clab', 'version':'1', 'content_type':'request' }
+        
         # parse RSpec (if rspec_string argument)
-        rspec = RSpec(rspec_string)
+        rspec = RSpec(rspec_string, version=rspec_version)
         # nodes in which the slivers will be created (list of dict)
+        # the dict contains a 'slivers' field, a list of dicts with info about slivers (template, overlay, sliver_interfaces)
         nodes_with_slivers = rspec.version.get_nodes_with_slivers()
         # ignore slice attributes...
         requested_attributes = rspec.version.get_slice_attributes()
@@ -287,22 +307,28 @@ class ClabAggregate:
             bound_node = checker.verify_node(slice_urn, node_with_sliver, credentials, 
                                              self.AUTOMATIC_NODE_CREATION, options)
             # interfaces_definition
-            interfaces = node_with_sliver['interfaces'] 
-            interfaces_definition=[]
-            for interface in interfaces:
+            #interfaces = node_with_sliver['interfaces'] 
+            #interfaces_definition=[]
+            #for interface in interfaces:
                 # Get the interface name  (client_id = MySliverName:IfaceName)
-                name = interface['client_id']
-                if ':' in name: name = name.split(':')[1]
-                interface_definition = dict([('name', name),('type', interface['role']),('nr', int(interface['interface_id']))])
-                interfaces_definition.append(interface_definition)
+            #    name = interface['client_id']
+            #    if ':' in name: name = name.split(':')[1]
+            #    interface_definition = dict([('name', name),('type', interface['role']),('nr', int(interface['interface_id']))])
+            #    interfaces_definition.append(interface_definition)
             
+            # Get sliver definition parameters (if any)
+            sliver_parameters = {}
+            slivers = node_with_sliver.get('slivers')
+            if slivers:
+                sliver_parameters = slivers[0]
+
             # properties
             # used to save the client_id field
             properties={"sfa_client_id" : node_with_sliver.get('client_id')}
             
             # create the sliver
             created_sliver = self.driver.testbed_shell.create_sliver(slice['uri'], bound_node['uri'], 
-                                                                     interfaces_definition, properties)
+                                                                     sliver_parameters.get('sliver_interfaces'), sliver_parameters.get('template'), properties)
             # force 'Register' state to the created sliver
             created_sliver = self.driver.testbed_shell.update_sliver_state(created_sliver['uri'], 'register')
             logger.debug("CREATED SLIVER IN ALLOCATE %s"%created_sliver)
@@ -313,8 +339,8 @@ class ClabAggregate:
         #return self.describe([slice_urn], credentials, options)
         
         version_manager = VersionManager()
-        version = version_manager.get_version('GENI 3')        
-        rspec_version = version_manager._get_version(version.type, version.version, 'manifest')
+        #version = version_manager.get_version('GENI 3')        
+        rspec_version = version_manager._get_version('clab', '1', 'manifest')
         rspec = RSpec(version=rspec_version, user_options=options)  
         
         # Prepare Return struct
@@ -514,11 +540,16 @@ class ClabAggregate:
         self.clean_exp_data(self.EXP_DATA_DIR)
         
         # Prepare and return the struct (use describe function)   
-        #return self.describe(urns, credentials, options)
+       
+         # Options field (from jFed) contains: {'geni_rspec_version': {'version': '3', 'type': 'geni'}, 'geni_compressed': True}
+        rspec_version = options.get('geni_rspec_version').get('version', '3')
+        rspec_type = options.get('geni_rspec_version').get('type', 'geni')
+        
         version_manager = VersionManager()
-        version = version_manager.get_version('GENI 3')        
-        rspec_version = version_manager._get_version(version.type, version.version, 'manifest')
-        rspec = RSpec(version=rspec_version, user_options=options)  
+        #version = version_manager.get_version('GENI 3')        
+        #rspec_version= version_manager._get_version(version.type, version.version, 'manifest')
+        rspec_version = version_manager._get_version(rspec_type, rspec_version, 'manifest')
+        rspec = RSpec(version=rspec_version, user_options=options)   
         
         # Prepare Return struct
         rspec_nodes = []
@@ -1232,6 +1263,17 @@ mkdir -p /root/.ssh  \n\
             rspec_node['hardware_types'] = [HardwareType({'name': node['arch']})]
             # Add INTERFACES
             rspec_node['interfaces'] = self.clab_node_interfaces_to_rspec_interfaces(node)
+            rspec_node['sliver_type']='RD_sliver'
+            
+            # EXTENSION for C-Lab v1 RSpec
+            # Group
+            group = self.driver.testbed_shell.get_group_by(group_uri=node['group']['uri'])
+            rspec_node['group'] = {'name': group['name'], 'id':str(group['id'])}
+            # Network interfaces
+            rspec_node['nodeInterfaces'] = self.clab_node_interfaces_to_clabv1rspec_interfaces(node)
+            # Management network
+            rspec_node['mgmt_net'] = {'addr':node['mgmt_net']['addr']}
+            
             
         elif rspec_type == 'manifest':
             #rspec_node['client_id'] = node_name # 'MyNode'
@@ -1245,32 +1287,6 @@ mkdir -p /root/.ssh  \n\
             rspec_node['slivers'] = self.clab_slivers_to_rspec_slivers(node)
             # Add SERVICES and LOGIN information
             rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':'sliver_ipv6', 'port':'22', 'username':'root'}}]
-            
-
-        # Rspec CLab-specific fields
-        # 'uri','id','name','description','arch','boot_sn','set_state','group','direct_ifaces','properties','cert','slivers',
-        #            'local_iface','sliver_pub_ipv6','sliver_pub_ipv4','sliver_pub_ipv4_range','mgmt_net','sliver_mac_prefix','priv_ipv4_prefix'
-        # 'current_state'
-        #rspec_node['uri'] = node['uri']
-        #rspec_node['id'] = node['id']
-        #rspec_node['name'] = node_name
-        #rspec_node['description'] = node['description']
-        #rspec_node['arch'] = node['arch']
-        #rspec_node['boot_sn'] = node['boot_sn']
-        #rspec_node['set_state'] = node['set_state']
-        #rspec_node['current_state'] = self.driver.testbed_shell.get_node_current_state(node=node)
-        #rspec_node['group'] = node['group']
-        #rspec_node['direct_ifaces'] = node['direct_ifaces']
-        #rspec_node['properties'] = node['properties']
-        #rspec_node['cert'] = node['cert']
-        #rspec_node['slivers'] = node['slivers']
-        #rspec_node['local_iface'] = node['local_iface']
-        #rspec_node['sliver_pub_ipv6'] = node['sliver_pub_ipv6']
-        #rspec_node['sliver_pub_ipv4'] = node['sliver_pub_ipv4']
-        #rspec_node['sliver_pub_ipv4_range'] = node['sliver_pub_ipv4_range']
-        #rspec_node['mgmt_net'] = node['mgmt_net']
-        #rspec_node['sliver_mac_prefix'] = node['sliver_mac_prefix']
-        #rspec_node['priv_ipv4_prefix'] = node['priv_ipv4_prefix']
             
         return rspec_node
     
@@ -1331,39 +1347,13 @@ mkdir -p /root/.ssh  \n\
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             rspec_node['exclusive'] = 'false'
             rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
-            # Add SLIVERS
+            # Add SLIVERS  (contains EXTENSION for CLAb v1 RSpec)
             rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
             
             if self.driver.testbed_shell.get_sliver_set_state(sliver=sliver) in ['deploy', 'start']:
                 # Add SERVICES and LOGIN information
                 ipv6_sliver_addr = self.driver.testbed_shell.get_ipv6_sliver_address(sliver=sliver)
                 rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':ipv6_sliver_addr, 'port':'22', 'username':'root'}}]
-          
-
-        # Rspec CLab-specific fields
-        # 'uri','id','name','description','arch','boot_sn','set_state','group','direct_ifaces','properties','cert','slivers',
-        #            'local_iface','sliver_pub_ipv6','sliver_pub_ipv4','sliver_pub_ipv4_range','mgmt_net','sliver_mac_prefix','priv_ipv4_prefix'
-        # 'current_state'
-        #rspec_node['uri'] = node['uri']
-        #rspec_node['id'] = node['id']
-        #rspec_node['name'] = node_name
-        #rspec_node['description'] = node['description']
-        #rspec_node['arch'] = node['arch']
-        #rspec_node['boot_sn'] = node['boot_sn']
-        #rspec_node['set_state'] = node['set_state']
-        #rspec_node['current_state'] = self.driver.testbed_shell.get_node_current_state(node=node)
-        #rspec_node['group'] = node['group']
-        #rspec_node['direct_ifaces'] = node['direct_ifaces']
-        #rspec_node['properties'] = node['properties']
-        #rspec_node['cert'] = node['cert']
-        #rspec_node['slivers'] = node['slivers']
-        #rspec_node['local_iface'] = node['local_iface']
-        #rspec_node['sliver_pub_ipv6'] = node['sliver_pub_ipv6']
-        #rspec_node['sliver_pub_ipv4'] = node['sliver_pub_ipv4']
-        #rspec_node['sliver_pub_ipv4_range'] = node['sliver_pub_ipv4_range']
-        #rspec_node['mgmt_net'] = node['mgmt_net']
-        #rspec_node['sliver_mac_prefix'] = node['sliver_mac_prefix']
-        #rspec_node['priv_ipv4_prefix'] = node['priv_ipv4_prefix']
             
         return rspec_node
     
@@ -1400,9 +1390,7 @@ mkdir -p /root/.ssh  \n\
         
         if direct_ifaces:
             for direct_iface in direct_ifaces:
-                client_id = '%s:%s'%(node_name, direct_iface)
-                rspec_direct_iface = dict([('interface_id', direct_iface), ('node_id', node['id']), 
-                                          ('role', 'direct_iface'), ('client_id', client_id)])
+                rspec_direct_iface = dict([('component_id', direct_iface)])
                 rspec_interfaces.append(rspec_direct_iface)
                     
         return rspec_interfaces
@@ -1429,7 +1417,58 @@ mkdir -p /root/.ssh  \n\
             rspec_interfaces.append(rspec_iface)
         return rspec_interfaces
     
+    def clab_node_interfaces_to_clabv1rspec_interfaces(self, node, options={}):
+        '''
+        Translate a list of CLab-specific interfaces dictionaries of a Node 
+        to a list of interfaces for the CLabv1 Rspec.
+        
+        :param node: C-Lab specific dict of a node
+        :type dict
+        
+        :param options: various options
+        :type dict
+        
+        :returns list of dictionaries containing the CLabv1RSpec of the node interfaces
+        :rtype list
+        ''' 
+        rspec_interfaces = []
+        
+        # LOCAL IFACE FIELD REMOVED IN THE CONTROLLER UPGRADE (28/05/2014)
+        #local_iface = node['local_iface']
+        direct_ifaces = node['direct_ifaces']
+        
+        #if local_iface:
+        #    rspec_local_iface = dict([('name', local_iface), ('type', 'direct')])
+        #    rspec_interfaces.append(rspec_local_iface)
+        
+        if direct_ifaces:
+            for direct_iface in direct_ifaces:
+                rspec_direct_iface = dict([('name', direct_iface), ('type', 'direct')])
+                rspec_interfaces.append(rspec_direct_iface)
+                    
+        return rspec_interfaces
     
+    
+    def clab_sliver_interfaces_to_clabv1rspec_interfaces(self, sliver, options={}):
+        '''
+        Translate a list of CLab-specific interfaces dictionaries of a Sliver 
+        to a list of interfaces for the CLabv1RSpec.
+        
+        :param sliver: C-Lab specific dictionary of Sliver
+        :type dict
+        
+        :param options: various options
+        :type dict
+         
+        :returns list of dictionaries containing the CLabv1RSpec of the sliver interfaces
+        :rtype list
+        ''' 
+        rspec_interfaces = []
+        for interface in sliver['interfaces']:
+            rspec_iface = dict([('name', interface['name']), ('type', interface['type']), ('nr', str(interface['nr']))])
+            rspec_interfaces.append(rspec_iface)
+        return rspec_interfaces
+
 
     def clab_sliver_to_rspec_sliver(self, sliver, options={}):
         '''
@@ -1448,6 +1487,21 @@ mkdir -p /root/.ssh  \n\
         disk_image = self.clab_template_to_rspec_disk_image(sliver)
         rspec_sliver = dict([('sliver_id', sliver['id']), #('client_id', sliver['id']), 
                             ('name', sliver['id']), ('type', 'RD_Sliver'), ('disk_image', disk_image)])
+        
+        # EXTENSION FOR CLab v1 RSpec
+        # Template
+        template_uri = sliver.get('template')
+        if not template_uri:
+            template_uri = self.driver.testbed_shell.get_slice_by(slice_uri=sliver['slice']['uri'])['template']
+        template = self.driver.testbed_shell.get_template_by(template_uri=template_uri['uri'])
+        rspec_sliver['template'] = {'name':template['name'], 'id':template['id'], 'type':template['type']}
+        # Overlay
+        overlay = sliver.get('overlay')
+        if overlay:
+            rspec_sliver['overlay'] = {'uri':overlay['uri']}
+        # Interfaces 
+        rspec_sliver['interfaces'] = sliver['interfaces'] 
+        
         return rspec_sliver 
     
     
@@ -1474,7 +1528,14 @@ mkdir -p /root/.ssh  \n\
             disk_image = self.clab_template_to_rspec_disk_image(sliver)
             rspec_sliver = dict([('sliver_id', sliver['id']), #('client_id', sliver['id']), 
                                 ('name', sliver['id']), ('type', 'RD_Sliver'), ('disk_image', disk_image)])
+            
+            # EXTENSION FOR CLab v1 RSpec
+            # Template
+            # Overlay
+            # Interfaces
+            
             rspec_slivers.append(rspec_sliver)
+            
         return rspec_slivers  
         
     

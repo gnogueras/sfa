@@ -355,29 +355,29 @@ Thierry Parmentelat
       </variablelist>
     </category>
     !-- ======================================== -->
-    <category id="sfa_clab">
+       <category id="sfa_clab">
       <name></name>
       <description>The settings for using SFA with a C-Lab testbed.</description>
 
       <variablelist>
         <variable id="user" type="string">
           <name>C-Lab user</name>
-          <value>vct</value>
+          <value>sfawrap</value>
           <description></description>
         </variable>
         <variable id="password" type="string">
           <name>C-Lab password for the user</name>
-          <value>vct</value>
+          <value>*********</value>
           <description></description>
         </variable>
         <variable id="group" type="string">
           <name>C-Lab group of the user</name>
-          <value>vct</value>
+          <value>fed4fire</value>
           <description></description>
         </variable>
         <variable id="url" type="string">
           <name>C-Lab Testbed Controller URL, XMLRPC URL</name>
-          <value>http://172.24.42.141/api</value>
+          <value>https://controller.community-lab.net/api</value>
           <description>URL for the C-Lab Testbed xmlrpc API</description>
         </variable>
         <variable id="auto_slice_creation" type="boolean">
@@ -407,7 +407,7 @@ Thierry Parmentelat
         </variable>
         <variable id="temp_dir_exp_data" type="string">
           <name>Temporal directory for generated exp-data files</name>
-          <value>/home/gerard/clab_sfawrap/experiment-data/</value>
+          <value>/tmp/clab_sfawrap/experiment-data/</value>
           <description></description>
         </variable>
       </variablelist>
