@@ -62,7 +62,7 @@ class Clabv1Node:
             if not slivers:
                 # we must still advertise the available sliver types
                 if node.get('sliver_type'):
-                    sliver_elem = xml.add_element('sliver_type')
+                    sliver_elem = node_elem.add_element('sliver_type')
                     sliver_elem.set('name', node['sliver_type'])
             else:
                 # Add the slivers of the node
