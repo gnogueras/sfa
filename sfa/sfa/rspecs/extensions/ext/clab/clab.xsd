@@ -1,0 +1,89 @@
+<!--
+    Extensions for Community-Lab (C-Lab) Sliver Resources
+    Version 1
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:clab="http://www.planet-lab.org/resources/sfa/ext/clab/1" elementFormDefault="qualified" targetNamespace="http://www.planet-lab.org/resources/sfa/ext/clab/1">
+  <!-- Simple types definition (with restrictions) -->
+  <!-- Slivers related -->
+  <xs:simpleType name="templateName">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Debian BitTorrent"/>
+      <xs:enumeration value="Cloudy"/>
+      <xs:enumeration value="AdLeaks Template"/>
+      <xs:enumeration value="Debian Squeeze"/>
+      <xs:enumeration value="openwrt-slice-test"/>
+      <xs:enumeration value="debian7 for NodeVers gr 20131115"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="templateId">
+    <xs:restriction base="xs:integer">
+      <xs:enumeration value="2"/>
+      <xs:enumeration value="4"/>
+      <xs:enumeration value="5"/>
+      <xs:enumeration value="12"/>
+      <xs:enumeration value="13"/>
+      <xs:enumeration value="15"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="templateType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="debian"/>
+      <xs:enumeration value="openwrt"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- General -->
+  <xs:simpleType name="interfaceType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="public4"/>
+      <xs:enumeration value="public6"/>
+      <xs:enumeration value="private"/>
+      <xs:enumeration value="management"/>
+      <xs:enumeration value="debug"/>
+      <xs:enumeration value="direct"/>
+      <xs:enumeration value="local"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- Complex types definition -->  
+  <!-- Slivers. Template -->
+  <xs:complexType name="Template">
+    <xs:attribute name="name" type="clab:templateName"/>
+    <xs:attribute name="id" type="clab:templateId"/>
+    <xs:attribute name="type" type="clab:templateType"/>
+  </xs:complexType>  
+  <!-- Slivers. Overlay -->
+  <xs:complexType name="Overlay">
+    <xs:attribute name="file" type="xs:string"/>
+    <xs:attribute name="uri" type="xs:string"/>
+    <xs:attribute name="sha256" type="xs:string"/>
+  </xs:complexType>   
+  <!-- Nodes. Group -->
+  <xs:complexType name="Group">
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="id" type="xs:integer"/>
+  </xs:complexType>  
+  <!-- Nodes. Management network -->
+  <xs:complexType name="ManagementNetwork">
+    <xs:attribute name="addr" type="xs:string"/>
+  </xs:complexType> 
+  <!-- General. Interface -->
+  <xs:complexType name="NetworkInterface">
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="type" type="clab:interfaceType"/>
+    <xs:attribute name="nr" type="xs:integer"/>
+  </xs:complexType>  
+  <!-- Elements definition -->
+  <xs:element name="network_interface" type="clab:NetworkInterface"/>
+  <xs:element name="group" type="clab:Group"/>
+  <xs:element name="management_network" type="clab:ManagementNetwork"/>
+  <xs:element name="sliver_parameters">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="template" type="clab:Template" minOccurs="0"/> 
+        <xs:element name="overlay" type="clab:Overlay" minOccurs="0"/>
+        <xs:element name="network_interface" type="clab:NetworkInterface" minOccurs="0" maxOccurs="8"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element> 
+</xs:schema>
+
+

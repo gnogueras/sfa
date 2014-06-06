@@ -397,7 +397,7 @@ Thierry Parmentelat
         </variable>
         <variable id="aggregate_cache_expiration_time" type="int">
           <name>If cache is enabled, the expiration time for the records (IN SECONDS)</name>
-          <value>3600</value>
+          <value>600</value>
           <description></description>
         </variable>
         <variable id="default_template" type="string">
