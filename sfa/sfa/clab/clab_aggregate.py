@@ -119,8 +119,8 @@ class ClabAggregate:
            
         #Geni state in options?
         state=None
-        if options.get('available'): state='available'
-                
+        if options.get('geni_available'): state='available'
+
         # Function get nodes
         nodes = self.get_nodes_by_geni_state(state)
 
@@ -1187,9 +1187,9 @@ mkdir -p /root/.ssh  \n\
         :rtype list of dict
         '''
         nodes = self.driver.testbed_shell.get_nodes()
-        #if state and state=='available':
+        if state and state=='available':
         #    nodes = [node for node in nodes if self.driver.testbed_shell.get_node_current_state(node=node)=='production']
-        #    nodes = [node for node in nodes if node['set_state']=='production' ]
+            nodes = [node for node in nodes if node['set_state']=='production' ]
         return nodes
         
             
