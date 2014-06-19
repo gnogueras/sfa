@@ -488,17 +488,13 @@ class ClabAggregate:
             slivers = []
             for sliver_uri in sliver_uris:
                 # Upload the exp-data file to push the public keys of the SFA user
-                self.driver.testbed_shell.upload_exp_data_to_sliver(exp_data_file, sliver_uri)
-                # Set the sliver state to Deploy 
                 sliver = self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
+                s = self.driver.testbed_shell.upload_exp_data_to_sliver(exp_data_file, sliver_uri)
+
+                # Set the sliver state to Deploy 
+                #sliver = self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
                 slivers.append(sliver)
-                # DEBUG
-                #sliver = self.driver.testbed_shell.get_sliver_by(sliver_uri=sliver_uri)
-                #slivers.append(sliver)
-                logger.debug("PROVISION SLIVER: %s"%sliver)
-                management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
-                logger.debug("PROVISION MANAGEMENT NTKW IFACE SLIVER: %s"%management_ntwk_iface)
-                #
+        
                 
             # Update the slice state for the changes in the sliver to have effect
             # Will not affect other slivers since they will have a lower set_state   
@@ -528,7 +524,7 @@ class ClabAggregate:
                 slivers = [self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy') for sliver in slivers]
                 # DEBUG
                 for sliver in slivers:
-                    #self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy')
+                    self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy')
                     # DEBUG
                     logger.debug("PROVISION SLIVER: %s"%sliver)
                     management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 

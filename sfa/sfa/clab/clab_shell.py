@@ -1159,7 +1159,8 @@ class ClabShell:
         :type string
         '''
         sliver = self.get_by_uri_no_serialized(sliver_uri)
-        sliver.upload_exp_data(open(exp_data_file,'r'))
+        s = sliver.upload_exp_data(open(exp_data_file))
+        return s
         # Force the sliver to use this exp-data file?
     
     def upload_exp_data_to_slice(self, exp_data_file, slice_uri):
