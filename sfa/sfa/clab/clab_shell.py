@@ -991,8 +991,7 @@ class ClabShell:
         '''
         sliver = self.get_by_uri_no_serialized(sliver_uri)
         try:
-            sliver.set_state=state
-            sliver.save()
+            sliver.update(set_state=state)
         except controller.ResponseStatusError as e:
             raise OperationFailed('update sliver state', e.message)
         return sliver.serialize()
@@ -1159,7 +1158,7 @@ class ClabShell:
         :type string
         '''
         sliver = self.get_by_uri_no_serialized(sliver_uri)
-        s = sliver.upload_exp_data(open(exp_data_file))
+        s = sliver.ctl_upload_exp_data(open(exp_data_file))
         return s
         # Force the sliver to use this exp-data file?
     
@@ -1176,7 +1175,7 @@ class ClabShell:
         :type string
         '''
         slice = self.get_by_uri_no_serialized(slice_uri)
-        slice.upload_exp_data(open(exp_data_file,'r'))
+        slice.ctl_upload_exp_data(open(exp_data_file,'r'))
         # Force the slice to use this exp-data file?    
 
     ##################

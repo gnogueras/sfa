@@ -488,13 +488,10 @@ class ClabAggregate:
             slivers = []
             for sliver_uri in sliver_uris:
                 # Upload the exp-data file to push the public keys of the SFA user
-                sliver = self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
                 s = self.driver.testbed_shell.upload_exp_data_to_sliver(exp_data_file, sliver_uri)
-
                 # Set the sliver state to Deploy 
-                #sliver = self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
+                sliver = self.driver.testbed_shell.update_sliver_state(sliver_uri, 'deploy')
                 slivers.append(sliver)
-        
                 
             # Update the slice state for the changes in the sliver to have effect
             # Will not affect other slivers since they will have a lower set_state   
@@ -522,15 +519,10 @@ class ClabAggregate:
                 # If the set_state of the sliver was lower, the changes in the slice would not affect its slivers 
                 slivers = self.driver.testbed_shell.get_slivers_by_slice(slice_uri=slice_uri)
                 slivers = [self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy') for sliver in slivers]
-                # DEBUG
+
                 for sliver in slivers:
                     self.driver.testbed_shell.update_sliver_state(sliver['uri'], 'deploy')
-                    # DEBUG
-                    logger.debug("PROVISION SLIVER: %s"%sliver)
-                    management_ntwk_iface = self.driver.testbed_shell.get_sliver_management_ntwk_iface(sliver=sliver) 
-                    logger.debug("PROVISION MANAGEMENT NTKW IFACE SLIVER: %s"%management_ntwk_iface)
-                    #
-                #####
+
                     
         # Clean the directory structure and files of the exp-data file
         self.clean_exp_data(self.EXP_DATA_DIR)
