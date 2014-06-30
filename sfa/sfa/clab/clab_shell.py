@@ -825,7 +825,7 @@ class ClabShell:
         if not interfaces_definition:
             interfaces = [Resource(name='priv', type='private', nr=0), Resource(name='mgmt0', type='management', nr=1)]       
         else:
-            interfaces = [Resource(name=iface['name'], type=iface['type'], nr=int(iface['nr'])) for iface in interfaces_definition]
+            interfaces = [Resource(name=iface['name'], type=iface['type']) for iface in interfaces_definition]  #nr=int(iface['nr'])
         # Check if template definition
         if not template_definition:
             template=None
