@@ -472,16 +472,11 @@ class ClabShell:
         # Get node
         if not node:
             node = self.get_node_by(node_uri=node_uri)
-        # Get management network address of the node
-        mgmt_net_addr = "http://[%s]/confine/api/node/"%(node['mgmt_net']['addr'])
-        # Get and return the state
-        # Get Current state may fail if the node is not ready
-        try:
-            current_state = controller.retrieve(mgmt_net_addr).state
-        #except controller.ResponseStatusError:
-        except Exception:
-            current_state = 'unknown'
-        return current_state
+        
+        state_link = node.get_links()['http://confine-project.eu/rel/controller/state']
+        from ast import literal_eval
+        current_state = literal_eval(controller.get(state_link).content)
+        return current_state['current']
             
     
     # NOTE:
@@ -505,16 +500,11 @@ class ClabShell:
         # Get sliver
         if not sliver:
             sliver = self.get_sliver_by(sliver_uri=sliver_uri)
-        # Get management network address of the sliver
-        mgmt_net_addr="http://[%s]/confine/api/slivers/%s/"%(controller.retrieve(sliver['node']['uri']).mgmt_net.addr, sliver['uri'].partition('slivers/')[2])
-        # Get and return the state
-        # Get current state may fail if the sliver is not ready
-        try:
-            current_state = controller.retrieve(mgmt_net_addr).state
-        #except controller.ResponseStatusError:
-        except Exception:
-            current_state = 'unknown'
-        return current_state
+        
+        state_link = sliver.get_links()['http://confine-project.eu/rel/controller/state']
+        from ast import literal_eval
+        current_state = literal_eval(controller.get(state_link).content)
+        return current_state['current'] 
     
     
     def get_sliver_set_state(self, sliver=None, sliver_uri=None):

@@ -1175,9 +1175,9 @@ mkdir -p /root/.ssh  \n\
         :rtype list of dict
         '''
         nodes = self.driver.testbed_shell.get_nodes()
-        if state and state=='available':
-        #    nodes = [node for node in nodes if self.driver.testbed_shell.get_node_current_state(node=node)=='production']
-            nodes = [node for node in nodes if node['set_state']=='production' ]
+        #if state and state=='available':
+        nodes = [node for node in nodes if self.driver.testbed_shell.get_node_current_state(node=node)=='production']
+            #nodes = [node for node in nodes if node['set_state']=='production' ]
         return nodes
         
             
