@@ -476,7 +476,8 @@ class ClabShell:
         node_no_serialized = self.get_by_uri_no_serialized(node_uri)
         state_link = node_no_serialized.get_links()['http://confine-project.eu/rel/controller/state']
         from ast import literal_eval
-        current_state = literal_eval(controller.get(state_link).content)
+        # content.split('{"current": "')[1].split('"')[0]
+        current_state = literal_eval(controller.get(state_link).content.replace('null','"null"'))
         return current_state['current']
             
     
@@ -505,7 +506,7 @@ class ClabShell:
         sliver_no_serialized = self.get_by_uri_no_serialized(sliver_uri)
         state_link = sliver_no_serialized.get_links()['http://confine-project.eu/rel/controller/state']
         from ast import literal_eval
-        current_state = literal_eval(controller.get(state_link).content)
+        current_state = literal_eval(controller.get(state_link).content.replace('null','"null"'))
         return current_state['current'] 
     
     
