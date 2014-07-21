@@ -470,10 +470,11 @@ class ClabShell:
         :rtype string
         '''
         # Get node
-        if not node:
-            node = self.get_node_by(node_uri=node_uri)
-        
-        state_link = node.get_links()['http://confine-project.eu/rel/controller/state']
+        if not node_uri:
+            node_uri = node['uri']
+            
+        node_no_serialized = self.get_by_uri_no_serialized(node_uri)
+        state_link = node_no_serialized.get_links()['http://confine-project.eu/rel/controller/state']
         from ast import literal_eval
         current_state = literal_eval(controller.get(state_link).content)
         return current_state['current']
@@ -498,10 +499,11 @@ class ClabShell:
         :rtype string
         '''
         # Get sliver
-        if not sliver:
-            sliver = self.get_sliver_by(sliver_uri=sliver_uri)
+        if not sliver_uri:
+            sliver_uri = sliver['uri']
         
-        state_link = sliver.get_links()['http://confine-project.eu/rel/controller/state']
+        sliver_no_serialized = self.get_by_uri_no_serialized(sliver_uri)
+        state_link = sliver_no_serialized.get_links()['http://confine-project.eu/rel/controller/state']
         from ast import literal_eval
         current_state = literal_eval(controller.get(state_link).content)
         return current_state['current'] 
