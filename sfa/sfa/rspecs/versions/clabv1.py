@@ -12,8 +12,8 @@ from sfa.rspecs.versions.pgv3 import GENIv3
 from sfa.rspecs.elements.versions.clabv1Node import Clabv1Node
 from sfa.rspecs.elements.versions.clabv1Sliver import Clabv1Sliver
 
-SCHEMA = "file:///home/gerard/Dropbox/KTH/Thesis/clab.xsd" 
-XMLNS = "file:///home/gerard/Dropbox/KTH/Thesis/clab.xsd" 
+SCHEMA = "http://wiki.confine-project.eu/_media/sfa:clab.xsd" 
+XMLNS = "http://wiki.confine-project.eu/_media/sfa:clab.xsd" 
 NAMESPACE = "http://www.geni.net/resources/rspec/3"
 
 # Examples
