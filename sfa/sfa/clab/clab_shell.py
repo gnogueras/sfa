@@ -771,19 +771,23 @@ class ClabShell:
         :returns dictionary of the created slice
         :rtype dict     
         '''
-        # Get Group and Template
+        # Get Group 
         if group_uri:
             group = self.get_by_uri(group_uri)
         else:
             group = self.get_group_by(group_name=self.groupname)
+        
+        # Get Template and create sliver_defaults dict
         if template_uri: 
             template = self.get_by_uri(template_uri)
         else:
             template = self.get_template_by(template_name=self.default_template)
+        sliver_defaults={"instance_sn": 0, "data_uri": "","overlay_uri": "", 
+                         "template": {"uri": template['uri'],"id": template['id']}}
             
         # Create slice
         try:
-            created_slice = controller.slices.create(name=name, group=group, template=template, properties={})
+            created_slice = controller.slices.create(name=name, group=group, sliver_defaults=sliver_defaults, properties={})
         except controller.ResponseStatusError as e:
             raise OperationFailed('create slice', e.message)
         # Return slice dictionary
@@ -1151,7 +1155,7 @@ class ClabShell:
         :type string
         '''
         sliver = self.get_by_uri_no_serialized(sliver_uri)
-        s = sliver.ctl_upload_exp_data(open(exp_data_file))
+        s = sliver.ctl_upload_data(open(exp_data_file))
         return s
         # Force the sliver to use this exp-data file?
     
@@ -1168,7 +1172,7 @@ class ClabShell:
         :type string
         '''
         slice = self.get_by_uri_no_serialized(slice_uri)
-        slice.ctl_upload_exp_data(open(exp_data_file,'r'))
+        slice.ctl_upload_data(open(exp_data_file,'r'))
         # Force the slice to use this exp-data file?    
 
     ##################
