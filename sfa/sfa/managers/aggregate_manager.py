@@ -1,4 +1,4 @@
-import socket
+import socket, datetime
 from sfa.rspecs.version_manager import VersionManager
 from sfa.util.version import version_core
 from sfa.util.xrn import Xrn
@@ -6,6 +6,7 @@ from sfa.util.callids import Callids
 from sfa.util.sfalogging import logger
 from sfa.util.faults import SfaInvalidArgument, InvalidRSpecVersion
 from sfa.server.api_versions import ApiVersions
+from sfa.util.sfatime import utcparse, adjust_datetime
 
 
 class AggregateManager:
@@ -87,7 +88,7 @@ class AggregateManager:
             if rspec:
                 logger.debug("%s.ListResources returning cached advertisement" % (api.driver.__module__))
                 return rspec
-       
+        options['creds']=creds
         rspec = api.driver.list_resources (rspec_version, options) 
         if api.driver.cache:
             logger.debug("%s.ListResources stores advertisement in cache" % (api.driver.__module__))
@@ -100,12 +101,14 @@ class AggregateManager:
 
         version_manager = VersionManager()
         rspec_version = version_manager.get_version(options.get('geni_rspec_version'))
+        options['creds']=creds
         return api.driver.describe(urns, rspec_version, options)
         
     
     def Status (self, api, urns, creds, options):
         call_id = options.get('call_id')
         if Callids().already_handled(call_id): return {}
+        options['creds']=creds
         return api.driver.status (urns, options=options)
    
 
@@ -116,6 +119,7 @@ class AggregateManager:
         """
         call_id = options.get('call_id')
         if Callids().already_handled(call_id): return ""
+        options['creds']=creds
         return api.driver.allocate(xrn, rspec_string, expiration, options)
  
     def Provision(self, api, xrns, creds, options):
@@ -135,12 +139,13 @@ class AggregateManager:
         rspec_version = version_manager.get_version(options['geni_rspec_version']) 
         if not rspec_version:
             raise InvalidRSpecVersion(options['geni_rspec_version'])
-                       
+        options['creds']=creds               
         return api.driver.provision(xrns, options)
     
     def Delete(self, api, xrns, creds, options):
         call_id = options.get('call_id')
         if Callids().already_handled(call_id): return True
+        options['creds']=creds
         return api.driver.delete(xrns, options)
 
     def Renew(self, api, xrns, creds, expiration_time, options):
@@ -154,16 +159,18 @@ class AggregateManager:
             max = adjust_datetime(now, days=int(api.config.SFA_MAX_SLICE_RENEW))
             if requested > max:
                 expiration_time = max
-
+        options['creds']=creds
         return api.driver.renew(xrns, expiration_time, options)
 
     def PerformOperationalAction(self, api, xrns, creds, action, options={}):
         call_id = options.get('call_id')
         if Callids().already_handled(call_id): return True
+        options['creds']=creds
         return api.driver.perform_operational_action(xrns, action, options) 
 
     def Shutdown(self, api, xrn, creds, options={}):
         call_id = options.get('call_id')
         if Callids().already_handled(call_id): return True
+        options['creds']=creds
         return api.driver.shutdown(xrn, options) 
     

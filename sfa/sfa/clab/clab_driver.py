@@ -190,7 +190,8 @@ class ClabDriver (Driver):
         """
         GENI AM API v3 GetVersion
         """
-        clab_logger.debug("%s:%s - Clab_Aggregate: get version"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: get version"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
+        clab_logger.log_am_action({}, "GetVersion", {}, {}, self.config) # No creds, no parameters, no options
         aggregate = ClabAggregate(self)
         version = aggregate.get_version()
         
@@ -205,8 +206,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 ListResources
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: list resources"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
-
+        #clab_logger.debug("%s:%s - Clab_Aggregate: list resources"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP))
+        creds=options.pop('creds',[])
+        clab_logger.log_am_action(creds, "ListResources", {}, options, self.config) # No parameters
+        
+        
         # CACHE CLAB_DRIVERlist_resources operation is costly. Therefore, the result of list_resources is cached
         
         # Check the Cache for a valid (not expired) list_resources result        
@@ -231,7 +235,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Describe
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: Describe %s "%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: Describe %s "%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        creds=options.pop('creds',[])
+        parameters={'urns':urns}
+        clab_logger.log_am_action(creds, "Describe", parameters, options, self.config)
+        
         aggregate = ClabAggregate(self)
         return aggregate.describe(urns, options=options)    
     
@@ -240,7 +248,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Allocate
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: allocate %s \n RSpec details: %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, slice_urn, rspec_string))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: allocate %s \n RSpec details: %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, slice_urn, rspec_string))
+        creds=options.pop('creds',[])
+        parameters={'slice_urn':slice_urn, 'rspec_string':rspec_string, 'expiration':expiration}
+        clab_logger.log_am_action(creds, "Allocate", parameters, options, self.config)
+        
         aggregate = ClabAggregate(self)
         return aggregate.allocate(slice_urn, rspec_string, expiration, options=options)
     
@@ -249,7 +261,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Renew
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: renew %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: renew %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        creds=options.pop('creds',[])
+        parameters={'urns':urns, 'expiration_time':expiration_time}
+        clab_logger.log_am_action(creds, "Renew", parameters, options, self.config)
+        
         aggregate = ClabAggregate(self)
         return aggregate.renew(urns, expiration_time, options=options)
     
@@ -258,7 +274,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Provision
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: provision %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: provision %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        creds=options.pop('creds',[])
+        parameters={'urns':urns}
+        clab_logger.log_am_action(creds, "Provision", parameters, options, self.config)
+        
         aggregate = ClabAggregate(self)
         return aggregate.provision(urns, options=options)
     
@@ -267,7 +287,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Status
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: status %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: status %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        creds=options.pop('creds',[])
+        parameters={'urns':urns}
+        clab_logger.log_am_action(creds, "Status", parameters, options, self.config)
+        
         aggregate = ClabAggregate(self)
         return aggregate.status(urns, options=options)
 
@@ -276,7 +300,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 PerformOperationalAction
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: perform operational action [%s] on %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP,action,urns))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: perform operational action [%s] on %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP,action,urns))
+        creds=options.pop('creds',[])
+        parameters={'urns':urns, 'action':action}
+        clab_logger.log_am_action(creds, "PerformOperationalAction", parameters, options, self.config)
+        
         aggregate = ClabAggregate(self)
         return aggregate.perform_operational_action(urns, action, options=options)
         
@@ -285,7 +313,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Delete
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: delete %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: delete %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, urns))
+        creds=options.pop('creds',[])
+        parameters={'urns':urns}
+        clab_logger.log_am_action(creds, "Delete", parameters, options, self.config)
+        
         aggregate = ClabAggregate(self)
         return aggregate.delete(urns, options=options)
    
@@ -294,7 +326,11 @@ class ClabDriver (Driver):
         '''
         GENI AM API v3 Shutdown
         '''
-        clab_logger.debug("%s:%s - Clab_Aggregate: shutdown %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, slice_urn))
+        #clab_logger.debug("%s:%s - Clab_Aggregate: shutdown %s"%(self.config.SFA_CLAB_USER, self.config.SFA_CLAB_GROUP, slice_urn))
+        creds=options.pop('creds',[])
+        parameters={'slice_urn':slice_urn}
+        clab_logger.log_am_action(creds, "Shutdown", parameters, options, self.config)
+        
         aggregate = ClabAggregate(self)
         return aggregate.shutdown(slice_urn, options=options)
     
