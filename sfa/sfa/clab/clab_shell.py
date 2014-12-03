@@ -49,7 +49,7 @@ class ClabShell:
     ###############
     # GET METHODS #
     ###############
-    
+ 
     def get_testbed_info(self):
         '''
         Special funciton to get information from the testbed.
@@ -213,8 +213,6 @@ class ClabShell:
         :returns Node dictionary of the specified node
         :rtype dict
         '''
-        #from sfa.clab.clab_logging import clab_logger
-        #clab_logger.debug("CLAB_SHELL:GET NODE BY  node_uri=%s, node_name=%s, node_id=%s"%(node_uri, node_name, node_id))
         try:
             if node_uri:
                 node = self.get_by_uri(node_uri)
@@ -301,7 +299,7 @@ class ClabShell:
         :type string
         
         :param group_id: (optional) get group with this id
-        :type string
+        :type int
         
         :returns Group dictionary of the specified group
         :rtype dict
@@ -316,6 +314,37 @@ class ClabShell:
         except TypeError:
             raise ResourceNotFound("group_id=%s, group_name=%s, group_uri=%s"%(group_id,group_name,group_uri))
         return group
+    
+    
+    def get_island_by(self, island_uri=None, island_name=None, island_id=None):
+        '''
+        Return the island clab-specific dictionary that corresponds to the 
+        given keyword argument (uri, name or id)
+        One of the parameters must be present.
+        
+        :param island_uri: (optional) get island with this uri
+        :type string
+        
+        :param island_name: (optional) get island with this name
+        :type string
+        
+        :param island_id: (optional) get island with this id
+        :type int
+        
+        :returns island dictionary of the specified island
+        :rtype dict
+        '''
+        try:
+            if island_uri:
+                island = self.get_by_uri(island_uri)
+            elif island_name:
+                island = controller.islands.retrieve().get(name=island_name).serialize()
+            elif island_id:
+                island = controller.islands.retrieve().get(id=island_id).serialize()
+        except TypeError:
+            raise ResourceNotFound("island_id=%s, island_name=%s, island_uri=%s"%(island_id,island_name,island_uri))
+        return island
+    
     
     def get_template_by(self, template_uri=None, template_name=None, template_id=None):
         '''
@@ -424,6 +453,66 @@ class ClabShell:
             nodes.append(controller.retrieve(sliver['node']['uri']).serialize())
         return nodes
     
+    def filter_nodes_by_group(self, nodes=None, group_name=None, group_id=None, group_uri=None):
+        '''
+        Function to get the nodes belonging to a given group.
+        One of the parameters must be present.
+        
+        :param group_name: (optional) get nodes belonging to the group with this name
+        :type string
+        
+        :param group_id: (optional) get nodes belonging to the group with this id
+        :type dict
+        
+        :param group_uri: (optional) get nodes belonging to the group with this uri
+        :type dict
+        
+        :returns List of node dictionaries that belong to the specifed group
+        :rtype list
+        '''
+        if not group_uri:
+            group_uri= self.get_group_by(group_uri, group_name, group_id)['uri']
+        filtered=[]
+        if not nodes:
+            nodes = controller.nodes.retrieve().serialize()
+        for node in nodes:
+            try:
+                if node['group']['uri'] == group_uri:
+                    filtered.append(node)
+            except TypeError:
+                pass
+        return filtered
+    
+    def filter_nodes_by_island(self, nodes=None, island_name=None, island_id=None, island_uri=None):
+        '''
+        Function to get the nodes belonging to a given island.
+        One of the parameters must be present.
+        
+        :param island_name: (optional) get nodes belonging to the island with this name
+        :type string
+        
+        :param island_id: (optional) get nodes belonging to the island with this id
+        :type dict
+        
+        :param island_uri: (optional) get nodes belonging to the island with this uri
+        :type dict
+        
+        :returns List of node dictionaries that belong to the specifed island
+        :rtype list
+        '''
+        if not island_uri:
+            island_uri= self.get_island_by(island_uri, island_name, island_id)['uri']
+        filtered=[]
+        if not nodes:
+            nodes = controller.nodes.retrieve().serialize()
+        for node in nodes:
+            try: 
+                if node['island']['uri'] == island_uri:
+                    filtered.append(node)
+            except TypeError:
+                pass
+        return filtered       
+        
     
     def get_users_by_slice(self, slice=None, slice_uri=None):
         '''
@@ -606,7 +695,7 @@ class ClabShell:
         return sliver_ipv6_addr
     
     
-    def get_available_nodes_for_slice(self, slice_uri):
+    def get_available_nodes_for_slice(self, slice_uri, node_element):
         '''
         Function that returns the list of available nodes for the given slice.
         Nodes that do not contain a sliver belonging to the given slice are available for that slice.
@@ -618,8 +707,21 @@ class ClabShell:
         :returns List of node dictionaries of the available nodes for the specified slice
         :rtype list
         '''
-        # Get all nodes
-        all_nodes = self.get_nodes()
+        filters={}
+
+        # Get arch parameters to filter nodes 'hardware_types': [{'name': 'i686'}]
+        if node_element.get('hardware_types'):
+            filters['arch']=node_element['hardware_types'][0]['name']
+        
+        # Get possible nodes taking into account filters above
+        all_nodes = self.get_nodes(filters=filters)
+        if node_element.get('group'):
+            group = node_element['group']
+            all_nodes = self.filter_nodes_by_group(nodes=all_nodes, group_name=group.get('name'), group_id=group.get('id'), group_uri=group.get('uri'))
+        if node_element.get('island'):
+            island = node_element['island']
+            all_nodes = self.filter_nodes_by_island(nodes=all_nodes, island_name=island.get('name'), island_id=island.get('id'), island_uri=island.get('uri'))
+            
         # Get nodes of the slice        
         nodes_of_slice = self.get_nodes_by_slice(slice_uri=slice_uri) 
         # Get available nodes (nodes in all_nodes and not in nodes_of_slice)
@@ -787,7 +889,7 @@ class ClabShell:
             
         # Create slice
         try:
-            created_slice = controller.slices.create(name=name, group=group, sliver_defaults=sliver_defaults, properties={})
+            created_slice = controller.slices.create(name=name, group=group, sliver_defaults=sliver_defaults, properties=properties)
         except controller.ResponseStatusError as e:
             raise OperationFailed('create slice', e.message)
         # Return slice dictionary

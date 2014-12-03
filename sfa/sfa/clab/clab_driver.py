@@ -253,6 +253,10 @@ class ClabDriver (Driver):
         parameters={'slice_urn':slice_urn, 'rspec_string':rspec_string, 'expiration':expiration}
         clab_logger.log_am_action(creds, "Allocate", parameters, options, self.config)
         
+        # prepare external user urn parameter for options
+        user_urns = self.get_user_urns_from_creds(creds)
+        options['external_user_urn'] = user_urns
+        
         aggregate = ClabAggregate(self)
         return aggregate.allocate(slice_urn, rspec_string, expiration, options=options)
     
@@ -335,6 +339,18 @@ class ClabDriver (Driver):
         return aggregate.shutdown(slice_urn, options=options)
     
     
+    
+    #########################################
+    #####       helper functions        #####
+    #########################################
+    
+    def get_user_urns_from_creds(self, creds):
+        user_urns = []
+        if creds: 
+            for credential in creds:
+                user_urn = credential['geni_value'].split('<owner_urn>')[1].split('</owner_urn>')[0]
+                user_urns.append(user_urn)
+        return user_urns
     
         
 

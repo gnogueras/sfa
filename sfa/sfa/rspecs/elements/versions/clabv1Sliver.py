@@ -122,7 +122,8 @@ class Clabv1Sliver:
                     sliver_network_ifaces = [dict(sliver_network_iface_elem.get_instance(Clabv1NetworkInterface)) for sliver_network_iface_elem in sliver_network_iface_elems]
                     sliver['sliver_interfaces'] = sliver_network_ifaces
                 
-            except Exception as e:
+            except Exception:
+                # there is no element sliver_parameters in the xml
                 pass
             slivers.append(sliver)
         return slivers

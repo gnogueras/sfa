@@ -72,8 +72,8 @@ class ClabAggregate:
         value = dict()
         value['geni_api'] = int(version_manager.get_version('GENI 3').version)
         value['geni_api_versions'] = dict([(version_manager.get_version('GENI 3').version, "https://84.88.85.16:12346")])
-        value['geni_request_rspec_versions'] = [version.to_dict() for version in version_manager.versions if (version.content_type in ['*', 'request'] and version.type=='GENI')]
-        value['geni_ad_rspec_versions'] = [version.to_dict() for version in version_manager.versions if (version.content_type in ['*', 'ad'] and version.type=='GENI')]
+        value['geni_request_rspec_versions'] = [version.to_dict() for version in version_manager.versions if (version.content_type in ['*', 'request'] and version.type in ['GENI','CLab'])]
+        value['geni_ad_rspec_versions'] = [version.to_dict() for version in version_manager.versions if (version.content_type in ['*', 'ad'] and version.type in ['GENI','CLab'])]
         value['geni_credential_types'] = [{'geni_type': 'geni_sfa', 'geni_version' : '3'}] ##???????????????????????????? CHECK
         
         # output
@@ -286,7 +286,7 @@ class ClabAggregate:
         checker = ClabSlices(self.driver)
         
         # Verify slice exist. Return slice in Register state (to be modified)
-        slice = checker.verify_slice(slice_urn, credentials, self.AUTOMATIC_SLICE_CREATION, options={})
+        slice = checker.verify_slice(slice_urn, credentials, self.AUTOMATIC_SLICE_CREATION, options=options)
         
         # version
         rspec_version = {'type':'clab', 'version':'1', 'content_type':'request' }
@@ -305,7 +305,7 @@ class ClabAggregate:
         for node_with_sliver in nodes_with_slivers:            
             # Verify the required nodes
             bound_node = checker.verify_node(slice_urn, node_with_sliver, credentials, 
-                                             self.AUTOMATIC_NODE_CREATION, options)
+                                             self.AUTOMATIC_NODE_CREATION, options=options)
             # interfaces_definition
             #interfaces = node_with_sliver['interfaces'] 
             #interfaces_definition=[]
@@ -323,8 +323,12 @@ class ClabAggregate:
                 sliver_parameters = slivers[0]
 
             # properties
-            # used to save the client_id field
+            # used to save the client_id field and the external_user_urn
             properties={"sfa_client_id" : node_with_sliver.get('client_id')}
+            external_user_urn = options.get('external_user_urn',[])
+            for x in external_user_urn:
+                properties['external_user_urn'] = x
+        
             
             # create the sliver
             created_sliver = self.driver.testbed_shell.create_sliver(slice['uri'], bound_node['uri'], 
@@ -1258,6 +1262,9 @@ mkdir -p /root/.ssh  \n\
             # Group
             group = self.driver.testbed_shell.get_group_by(group_uri=node['group']['uri'])
             rspec_node['group'] = {'name': group['name'], 'id':str(group['id'])}
+            # Island
+            island = self.driver.testbed_shell.get_island_by(island_uri=node['island']['uri'])
+            rspec_node['island'] = {'name': island['name'], 'id':str(island['id'])}
             # Network interfaces
             rspec_node['nodeInterfaces'] = self.clab_node_interfaces_to_clabv1rspec_interfaces(node)
             # Management network
@@ -1276,6 +1283,17 @@ mkdir -p /root/.ssh  \n\
             rspec_node['slivers'] = self.clab_slivers_to_rspec_slivers(node)
             # Add SERVICES and LOGIN information
             rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':'sliver_ipv6', 'port':'22', 'username':'root'}}]
+            # EXTENSION for C-Lab v1 RSpec
+            # Group
+            group = self.driver.testbed_shell.get_group_by(group_uri=node['group']['uri'])
+            rspec_node['group'] = {'name': group['name'], 'id':str(group['id'])}
+            # Island
+            island = self.driver.testbed_shell.get_island_by(island_uri=node['island']['uri'])
+            rspec_node['island'] = {'name': island['name'], 'id':str(island['id'])}
+            # Network interfaces
+            rspec_node['nodeInterfaces'] = self.clab_node_interfaces_to_clabv1rspec_interfaces(node)
+            # Management network
+            rspec_node['mgmt_net'] = {'addr':node['mgmt_net']['addr']}
             
         return rspec_node
     
@@ -1335,7 +1353,7 @@ mkdir -p /root/.ssh  \n\
             rspec_node['component_name'] = node_name # pc160  
             rspec_node['authority_id'] = hrn_to_urn(self.AUTHORITY, 'authority+sa') #urn:publicid:IDN+confine:clab+authority+sa
             rspec_node['exclusive'] = 'false'
-            rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])
+            rspec_node['sliver_id'] = slivername_to_urn(self.AUTHORITY, sliver['id'])          
             # Add SLIVERS  (contains EXTENSION for CLAb v1 RSpec)
             rspec_node['slivers'] = self.clab_sliver_to_rspec_sliver(sliver)
             
@@ -1343,7 +1361,17 @@ mkdir -p /root/.ssh  \n\
                 # Add SERVICES and LOGIN information
                 ipv6_sliver_addr = self.driver.testbed_shell.get_ipv6_sliver_address(sliver=sliver)
                 rspec_node['services'] = [{'login':{'authentication':'ssh-keys', 'hostname':ipv6_sliver_addr, 'port':'22', 'username':'root'}}]
-            
+            # EXTENSION for C-Lab v1 RSpec
+            # Group
+            group = self.driver.testbed_shell.get_group_by(group_uri=node['group']['uri'])
+            rspec_node['group'] = {'name': group['name'], 'id':str(group['id'])}
+            # Island
+            island = self.driver.testbed_shell.get_island_by(island_uri=node['island']['uri'])
+            rspec_node['island'] = {'name': island['name'], 'id':str(island['id'])}
+            # Network interfaces
+            rspec_node['nodeInterfaces'] = self.clab_node_interfaces_to_clabv1rspec_interfaces(node)
+            # Management network
+            rspec_node['mgmt_net'] = {'addr':node['mgmt_net']['addr']}
         return rspec_node
     
     

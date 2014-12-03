@@ -66,11 +66,15 @@ class ClabSlices:
         except Exception:
             # Slice does not exist
             if creation_flag:
-                # create Slice
+                # prepare slicename
                 slicename = urn_to_slicename(slice_urn)
-                # TODO: get group uri from credentials
-                #group_uri='http://172.24.42.141/api/groups/1'
-                created_slice = self.driver.testbed_shell.create_slice(slicename)
+                # prepare properties dict with external_user_urn information
+                properties={}
+                external_user_urn = options.get('external_user_urn',[])
+                for x in external_user_urn:
+                    properties['external_user_urn'] = x
+                # create slice
+                created_slice = self.driver.testbed_shell.create_slice(slicename, properties=properties)
                 #self.import_slice_to_registry(created_slice['name'])
                 clab_logger.debug("Verify_Slice in Allocate: Slice did not exist. Slice created: %s"%created_slice['name'])
                 return created_slice
@@ -125,17 +129,17 @@ class ClabSlices:
                 
         if node_element['component_id'] and node_element['component_manager_id']: 
             # Bound node specified
-            
             try:
                 # component_id = URN of the node | component_manager_id = URN of the authority
                 # component_name = name of the node
+                
                 nodename=urn_to_nodename(node_element['component_id'])
                 node_uri = urn_to_uri(self.driver, node_element['component_id'])
                 node = self.driver.testbed_shell.get_node_by(node_uri=node_uri)
                 # Required bound exists
                 clab_logger.debug("Verify_Node in Allocate: specified bound node exists: %s"%node['name'])
                 # node available for the slice?
-                if node not in self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri):
+                if node not in self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri, node_element):
                     # Node already contains an sliver for this slice
                     # Delete old sliver
                     old_sliver = self.driver.testbed_shell.get_slivers({'node_uri':node_uri, 'slice_uri':slice_uri})[0]
@@ -164,7 +168,7 @@ class ClabSlices:
                 
         else: 
             # Bound node not specified            
-            available_nodes = self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri)
+            available_nodes = self.driver.testbed_shell.get_available_nodes_for_slice(slice_uri, node_element)
             
             
             randomly_selected = random.randint(0, len(available_nodes)-1)

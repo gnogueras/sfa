@@ -5,6 +5,7 @@ Created on Jun 3, 2014
 '''
 from sfa.util.xrn import Xrn, get_leaf
 from sfa.util.xml import XpathFilter
+from lxml.etree import XPathEvalError 
 
 from sfa.rspecs.elements.node import NodeElement
 from sfa.rspecs.elements.sliver import Sliver
@@ -23,6 +24,7 @@ from sfa.rspecs.elements.attribute import Attribute
 
 from sfa.rspecs.elements.versions.clabv1Sliver import Clabv1Sliver
 from sfa.rspecs.elements.versions.clabv1Interface import Clabv1Interface
+from sfa.rspecs.elements.versions.clabv1NodeParameters import Clabv1Group, Clabv1Island
 
 class Clabv1Node:
     
@@ -75,6 +77,10 @@ class Clabv1Node:
             if group:
                 group_elem = node_elem.add_element('{%s}group'%xml.namespaces['clab'], name=group['name'], id=group['id'])
             
+            island = node.get('island')
+            if island:
+                island_elem = node_elem.add_element('{%s}island'%xml.namespaces['clab'], name=island['name'], id=island['id'])
+                
             # Add Node Network Interfaces
             #node_ifaces = node.get('nodeInterfaces')
             #if node_ifaces:
@@ -144,13 +150,28 @@ class Clabv1Node:
                 else: 
                     node['boot_state'] = 'disabled' 
 
-           # EXTENSION FOR CLab v1 RSpec
-           # template
-           # overlay
-           # sliver interfaces
-
-           
-  
+            # EXTENSION FOR CLab v1 RSpec
+            # get group
+            try:
+                group_elems = node_elem.xpath('./clab:group | ./group')
+                if len(group_elems) > 0:
+                    group_elem = group_elems[0]
+                    group = dict(group_elem.get_instance(Clabv1Group))
+                    node['group'] = group
+            except XPathEvalError:
+                # there is no group element in the xml
+                pass
+            # get island
+            try:
+                island_elems = node_elem.xpath('./clab:island | ./island')
+                if len(island_elems) > 0:
+                    island_elem = island_elems[0]
+                    island = dict(island_elem.get_instance(Clabv1Island))
+                    node['island'] = island
+            except XPathEvalError:
+                # there is no island element in the xml
+                pass
+               
         return nodes
 
 
